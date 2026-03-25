@@ -1,7 +1,8 @@
 import { Search, SlidersHorizontal } from "lucide-react";
-import { categories } from "../../data/mockProducts";
 
-export default function FilterBar({ filters, setFilters }) {
+const MAX_PRICE = 50000;
+
+export default function FilterBar({ filters, setFilters, categories = ["Todos"] }) {
   return (
     <div className="filterbar">
       <div className="search-wrap">
@@ -29,16 +30,24 @@ export default function FilterBar({ filters, setFilters }) {
 
         <div className="price-filter">
           <SlidersHorizontal size={16} />
-          <span className="price-label">Hasta ${filters.maxPrice.toLocaleString()}</span>
+          <span className="price-label">
+            {filters.maxPrice >= MAX_PRICE
+              ? "Todos los precios"
+              : `Hasta $${filters.maxPrice.toLocaleString("es-AR")}`}
+          </span>
           <input
             type="range"
             min={500}
-            max={50000}
+            max={MAX_PRICE}
             step={500}
-            value={filters.maxPrice}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, maxPrice: Number(e.target.value) }))
-            }
+            value={Math.min(filters.maxPrice, MAX_PRICE)}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              setFilters((f) => ({
+                ...f,
+                maxPrice: val >= MAX_PRICE ? Infinity : val,
+              }));
+            }}
             className="price-range"
           />
         </div>

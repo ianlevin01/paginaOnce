@@ -7,7 +7,7 @@ export default function ChatBot() {
   const [messages, setMessages] = useState([
     {
       role: "bot",
-      text: "¡Hola! Soy el asistente de MercadoLocal 🛍️ ¿En qué te puedo ayudar hoy?",
+      text: "¡Hola! Soy el asistente de Oncepuntos 🛍️ ¿En qué te puedo ayudar hoy?",
     },
   ]);
   const [input, setInput] = useState("");
