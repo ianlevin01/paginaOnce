@@ -1,7 +1,30 @@
 import ProductCard from "./ProductCard";
 import { PackageSearch } from "lucide-react";
 
-export default function ProductGrid({ products }) {
+function SkeletonCard() {
+  return (
+    <div className="skeleton-card">
+      <div className="skeleton-img" />
+      <div className="skeleton-body">
+        <div className="skeleton-line" style={{ width: "80%" }} />
+        <div className="skeleton-line" style={{ width: "55%" }} />
+        <div className="skeleton-line" style={{ width: "40%", marginTop: 4 }} />
+      </div>
+    </div>
+  );
+}
+
+export default function ProductGrid({ products, loading }) {
+  if (loading) {
+    return (
+      <div className="product-grid">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
+
   if (products.length === 0) {
     return (
       <div className="empty-state">
