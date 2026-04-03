@@ -1,8 +1,8 @@
 // pages/ShopPage.jsx
 import { useState, useEffect, useMemo, useRef } from "react";
-import FilterBar from "../components/products/FilterBar";
-import ProductGrid from "../components/products/ProductGrid";
-import AuthModal from "../components/auth/AuthModal";
+import FilterBar from "../components/products/FilterBar.jsx";
+import ProductGrid from "../components/products/ProductGrid.jsx";
+import AuthModal from "../components/auth/AuthModal.jsx.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const PAGE_SIZE = 60;
