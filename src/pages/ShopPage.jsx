@@ -1,10 +1,25 @@
+// pages/ShopPage.jsx
 import { useState, useEffect, useMemo, useRef } from "react";
 import FilterBar from "../components/products/FilterBar";
 import ProductGrid from "../components/products/ProductGrid";
+import AuthModal from "../components/auth/AuthModal";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const PAGE_SIZE = 60;
 const MAX_PRICE = 50000;
+
+// ── Función de ordenamiento local ─────────────────────────────────────────────
+function sortProducts(products, sort) {
+  if (!sort || sort === "default") return products;
+  const arr = [...products];
+  switch (sort) {
+    case "price_asc":  return arr.sort((a, b) => a.price - b.price);
+    case "price_desc": return arr.sort((a, b) => b.price - a.price);
+    case "name_asc":   return arr.sort((a, b) => a.name.localeCompare(b.name, "es"));
+    case "name_desc":  return arr.sort((a, b) => b.name.localeCompare(a.name, "es"));
+    default:           return arr;
+  }
+}
 
 export default function ShopPage() {
   const [products, setProducts]   = useState([]);
@@ -12,22 +27,24 @@ export default function ShopPage() {
   const [error, setError]         = useState(null);
   const [offset, setOffset]       = useState(0);
   const [hasMore, setHasMore]     = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // { id, name }[]  — se carga una sola vez al montar
+  // { id, name }[]
   const [categories, setCategories] = useState([]);
 
   const [filters, setFilters] = useState({
     search:     "",
-    categoryId: null,   // null = "Todos"
+    categoryId: null,
     maxPrice:   MAX_PRICE,
+    sort:       "default",
   });
 
-  // ── Cargar categorías al montar ───────────────────────────────────────────
+  // ── Cargar categorías ─────────────────────────────────────────────────────
   useEffect(() => {
     fetch(`${API_URL}/api/products/categories`)
       .then((r) => r.ok ? r.json() : Promise.reject())
       .then(setCategories)
-      .catch(() => {}); // no bloquea la app si falla
+      .catch(() => {});
   }, []);
 
   // ── Debounce búsqueda ─────────────────────────────────────────────────────
@@ -65,7 +82,6 @@ export default function ShopPage() {
     setError(null);
 
     let url;
-
     if (debouncedSearch) {
       url = `${API_URL}/api/products/search?name=${encodeURIComponent(debouncedSearch)}`;
     } else {
@@ -82,7 +98,6 @@ export default function ShopPage() {
       .then((data) => {
         if (cancelled) return;
         const normalized = data.map(normalizeProduct);
-
         if (debouncedSearch) {
           setProducts(normalized);
           setHasMore(false);
@@ -97,11 +112,14 @@ export default function ShopPage() {
     return () => { cancelled = true; };
   }, [debouncedSearch, filters.categoryId, offset]);
 
-  // ── Filtro local de precio ────────────────────────────────────────────────
+  // ── Filtro local de precio + ordenamiento ─────────────────────────────────
   const filtered = useMemo(() => {
-    if (filters.maxPrice >= MAX_PRICE) return products;
-    return products.filter((p) => p.price <= filters.maxPrice);
-  }, [products, filters.maxPrice]);
+    let result = products;
+    if (filters.maxPrice < MAX_PRICE) {
+      result = result.filter((p) => p.price <= filters.maxPrice);
+    }
+    return sortProducts(result, filters.sort);
+  }, [products, filters.maxPrice, filters.sort]);
 
   return (
     <main className="shop-main">
@@ -132,7 +150,11 @@ export default function ShopPage() {
           )}
         </div>
 
-        <ProductGrid products={filtered} loading={loading && products.length === 0} />
+        <ProductGrid
+          products={filtered}
+          loading={loading && products.length === 0}
+          onNeedLogin={() => setShowAuthModal(true)}
+        />
 
         {hasMore && !loading && !debouncedSearch && (
           <div style={{ textAlign: "center", marginTop: "2rem" }}>
@@ -151,16 +173,18 @@ export default function ShopPage() {
           </div>
         )}
       </div>
+
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </main>
   );
 }
 
 function normalizeProduct(p) {
-  const prices = p.prices ?? [];
-  const price1 = prices.find((x) => x.price_type === "precio_1");
-  const price  = parseFloat(price1?.price ?? prices[0]?.price ?? 0);
+  const prices  = p.prices ?? [];
+  const price1  = prices.find((x) => x.price_type === "precio_1");
+  const price   = parseFloat(price1?.price ?? prices[0]?.price ?? 0);
   const stockArr = p.stock ?? [];
-  const stock = stockArr.length === 0
+  const stock   = stockArr.length === 0
     ? 99
     : stockArr.reduce((acc, s) => acc + (s.quantity ?? 0), 0);
 
@@ -175,5 +199,3 @@ function normalizeProduct(p) {
     stock,
   };
 }
-
-

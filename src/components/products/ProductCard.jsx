@@ -1,22 +1,27 @@
+// components/products/ProductCard.jsx
 import { useState, useEffect, useRef } from "react";
-import { Plus, Minus, ShoppingCart, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Check, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
 
 const PLACEHOLDER = "https://placehold.co/400x400?text=Sin+imagen";
-const SLIDE_INTERVAL = 6000; // 6 segundos entre slides
+const SLIDE_INTERVAL = 6000;
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, onNeedLogin }) {
   const { addToCart } = useCart();
+  const { favorites, toggleFavorite, isLoggedIn } = useAuth();
+
   const [qty, setQty]             = useState(1);
   const [added, setAdded]         = useState(false);
   const [imgIndex, setImgIndex]   = useState(0);
-  // direction: "next" | "prev" — para saber hacia dónde animar
   const [direction, setDirection] = useState("next");
-  // "idle" | "exit" | "enter"
   const [phase, setPhase]         = useState("idle");
-  const [displayed, setDisplayed] = useState(0); // índice que se ve en pantalla
+  const [displayed, setDisplayed] = useState(0);
+  const [favAnim, setFavAnim]     = useState(false);
   const timerRef                  = useRef(null);
   const animating                 = useRef(false);
+
+  const isFav = favorites.has(product.id);
 
   const images = (() => {
     const raw  = product.images ?? (product.image ? [product.image] : []);
@@ -30,10 +35,8 @@ export default function ProductCard({ product }) {
     if (animating.current || nextIdx === displayed) return;
     animating.current = true;
     setDirection(dir);
-    setImgIndex(nextIdx);  // precarga la imagen destino
+    setImgIndex(nextIdx);
     setPhase("exit");
-
-    // Cuando termina el exit, cambia el displayed y empieza el enter
     setTimeout(() => {
       setDisplayed(nextIdx);
       setPhase("enter");
@@ -71,7 +74,7 @@ export default function ProductCard({ product }) {
               setPhase("enter");
               setTimeout(() => { setPhase("idle"); animating.current = false; }, 380);
             }, 350);
-            return d; // no cambia todavía, lo cambia el setTimeout
+            return d;
           });
         }
       }, SLIDE_INTERVAL);
@@ -90,9 +93,19 @@ export default function ProductCard({ product }) {
     setQty(1);
   };
 
+  const handleFav = async (e) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      onNeedLogin?.();
+      return;
+    }
+    setFavAnim(true);
+    await toggleFavorite(product.id);
+    setTimeout(() => setFavAnim(false), 400);
+  };
+
   const sinStock = product.stock <= 0;
 
-  // Clase CSS según fase y dirección
   const imgClass = [
     "product-img",
     phase === "exit"  ? `slide-exit-${direction}`  : "",
@@ -100,7 +113,7 @@ export default function ProductCard({ product }) {
   ].filter(Boolean).join(" ");
 
   return (
-    <div className={`product-card ${sinStock ? "out-of-stock" : ""}`}>
+    <div className="product-card">
       <div className="product-img-wrap">
         <img
           key={displayed}
@@ -109,6 +122,15 @@ export default function ProductCard({ product }) {
           className={imgClass}
           onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
         />
+
+        {/* ── Botón favorito ── */}
+        <button
+          className={`fav-btn ${isFav ? "fav-btn--active" : ""} ${favAnim ? "fav-btn--pop" : ""}`}
+          onClick={handleFav}
+          aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+        >
+          <Heart size={16} fill={isFav ? "currentColor" : "none"} />
+        </button>
 
         {total > 1 && (
           <>
@@ -136,7 +158,6 @@ export default function ProductCard({ product }) {
         )}
 
         {product.category && <span className="product-category">{product.category}</span>}
-        {sinStock          && <span className="product-badge-out">Sin stock</span>}
       </div>
 
       <div className="product-body">
@@ -150,11 +171,11 @@ export default function ProductCard({ product }) {
 
           <div className="product-actions">
             <div className="qty-control">
-              <button className="qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={sinStock}>
+              <button className="qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}>
                 <Minus size={14} />
               </button>
               <span className="qty-value">{qty}</span>
-              <button className="qty-btn" onClick={() => setQty((q) => Math.min(product.stock || 99, q + 1))} disabled={sinStock}>
+              <button className="qty-btn" onClick={() => setQty((q) => Math.min(product.stock || 99, q + 1))}>
                 <Plus size={14} />
               </button>
             </div>

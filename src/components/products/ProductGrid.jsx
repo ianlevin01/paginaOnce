@@ -1,3 +1,4 @@
+// components/products/ProductGrid.jsx
 import ProductCard from "./ProductCard";
 import { PackageSearch } from "lucide-react";
 
@@ -14,7 +15,7 @@ function SkeletonCard() {
   );
 }
 
-export default function ProductGrid({ products, loading }) {
+export default function ProductGrid({ products, loading, onNeedLogin }) {
   if (loading) {
     return (
       <div className="product-grid">
@@ -37,7 +38,7 @@ export default function ProductGrid({ products, loading }) {
   return (
     <div className="product-grid">
       {products.map((p) => (
-        <ProductCard key={p.id} product={p} />
+        <ProductCard key={p.id} product={p} onNeedLogin={onNeedLogin} />
       ))}
     </div>
   );

@@ -1,23 +1,34 @@
+// components/products/FilterBar.jsx
 import { useState, useRef, useEffect } from "react";
-import { Search, SlidersHorizontal, ChevronDown, Tag } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown, Tag, ArrowUpDown } from "lucide-react";
 
 const MAX_PRICE = 50000;
 
-// categories: [{ id, name }]
-export default function FilterBar({ filters, setFilters, categories = [] }) {
-  const [catOpen, setCatOpen] = useState(false);
-  const dropdownRef           = useRef(null);
+export const SORT_OPTIONS = [
+  { value: "default",    label: "Relevancia" },
+  { value: "price_asc",  label: "Menor precio" },
+  { value: "price_desc", label: "Mayor precio" },
+  { value: "name_asc",   label: "Nombre A→Z" },
+  { value: "name_desc",  label: "Nombre Z→A" },
+];
 
-  const selectedName = filters.categoryId === null
+export default function FilterBar({ filters, setFilters, categories = [] }) {
+  const [catOpen,  setCatOpen]  = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const catRef  = useRef(null);
+  const sortRef = useRef(null);
+
+  const selectedCatName = filters.categoryId === null
     ? "Todas las categorías"
     : (categories.find((c) => c.id === filters.categoryId)?.name ?? "Categoría");
 
-  // Cerrar al hacer click fuera
+  const selectedSortLabel = SORT_OPTIONS.find((o) => o.value === (filters.sort ?? "default"))?.label ?? "Relevancia";
+
+  // Cerrar dropdowns al hacer click fuera
   useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setCatOpen(false);
-      }
+      if (catRef.current  && !catRef.current.contains(e.target))  setCatOpen(false);
+      if (sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -26,6 +37,11 @@ export default function FilterBar({ filters, setFilters, categories = [] }) {
   const selectCat = (id) => {
     setFilters((f) => ({ ...f, categoryId: id }));
     setCatOpen(false);
+  };
+
+  const selectSort = (value) => {
+    setFilters((f) => ({ ...f, sort: value }));
+    setSortOpen(false);
   };
 
   return (
@@ -44,13 +60,13 @@ export default function FilterBar({ filters, setFilters, categories = [] }) {
         </div>
 
         {/* ── Dropdown categorías ── */}
-        <div className="cat-dropdown" ref={dropdownRef}>
+        <div className="cat-dropdown" ref={catRef}>
           <button
             className={`cat-trigger ${catOpen ? "open" : ""} ${filters.categoryId !== null ? "has-value" : ""}`}
             onClick={() => setCatOpen((o) => !o)}
           >
             <Tag size={15} />
-            <span className="cat-trigger-label">{selectedName}</span>
+            <span className="cat-trigger-label">{selectedCatName}</span>
             <ChevronDown size={15} className="cat-chevron" />
           </button>
 
@@ -70,6 +86,32 @@ export default function FilterBar({ filters, setFilters, categories = [] }) {
                   onClick={() => selectCat(cat.id)}
                 >
                   {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Dropdown ordenamiento ── */}
+        <div className="cat-dropdown" ref={sortRef}>
+          <button
+            className={`cat-trigger ${sortOpen ? "open" : ""} ${(filters.sort && filters.sort !== "default") ? "has-value" : ""}`}
+            onClick={() => setSortOpen((o) => !o)}
+          >
+            <ArrowUpDown size={15} />
+            <span className="cat-trigger-label">{selectedSortLabel}</span>
+            <ChevronDown size={15} className="cat-chevron" />
+          </button>
+
+          {sortOpen && (
+            <div className="cat-menu">
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`cat-option ${(filters.sort ?? "default") === opt.value ? "active" : ""}`}
+                  onClick={() => selectSort(opt.value)}
+                >
+                  {opt.label}
                 </button>
               ))}
             </div>

@@ -1,39 +1,133 @@
+// components/checkout/CheckoutForm.jsx
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, ArrowLeft } from "lucide-react";
+import {
+  CheckCircle2, ArrowLeft, Plus, Minus, Trash2,
+  User, LogIn, X, UserPlus
+} from "lucide-react";
+import AuthModal from "../auth/AuthModal";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const DELIVERY_OPTIONS = ["Retiro del local", "Recibe del transporte"];
+const PLACEHOLDER = "https://placehold.co/400x400?text=Sin+imagen";
 
+// ── Mini editor de ítem del carrito ──────────────────────────────────────────
+function CheckoutCartItem({ item }) {
+  const { updateQuantity, removeFromCart } = useCart();
+  return (
+    <div className="co-cart-item">
+      <img
+        src={item.image ?? PLACEHOLDER}
+        alt={item.name}
+        className="co-cart-item-img"
+        onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
+      />
+      <div className="co-cart-item-info">
+        <p className="co-cart-item-name">{item.name}</p>
+        <span className="co-cart-item-unit">${item.price.toLocaleString("es-AR")} c/u</span>
+      </div>
+      <div className="co-cart-item-controls">
+        <button
+          className="qty-btn"
+          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+          aria-label="Restar"
+        >
+          <Minus size={13} />
+        </button>
+        <span className="qty-value">{item.quantity}</span>
+        <button
+          className="qty-btn"
+          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+          aria-label="Sumar"
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+      <span className="co-cart-item-price">
+        ${(item.price * item.quantity).toLocaleString("es-AR")}
+      </span>
+      <button
+        className="co-cart-item-remove"
+        onClick={() => removeFromCart(item.id)}
+        aria-label="Eliminar"
+      >
+        <Trash2 size={15} />
+      </button>
+    </div>
+  );
+}
+
+// ── Banner "¿Querés registrarte?" ─────────────────────────────────────────────
+function RegisterPrompt({ onRegister, onDismiss }) {
+  return (
+    <div className="register-prompt">
+      <button className="register-prompt-close" onClick={onDismiss} aria-label="Cerrar">
+        <X size={14} />
+      </button>
+      <div className="register-prompt-icon">
+        <UserPlus size={22} />
+      </div>
+      <div className="register-prompt-text">
+        <p className="register-prompt-title">¿Querés guardar tus pedidos?</p>
+        <p className="register-prompt-sub">
+          Registrate o iniciá sesión para ver tu historial de compras y agilizar tus próximos pedidos.
+        </p>
+      </div>
+      <div className="register-prompt-actions">
+        <button className="register-prompt-btn register-prompt-btn--primary" onClick={onRegister}>
+          <LogIn size={15} /> Ingresar / Registrarse
+        </button>
+        <button className="register-prompt-btn register-prompt-btn--ghost" onClick={onDismiss}>
+          Continuar sin cuenta
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
 export default function CheckoutForm() {
   const { cartItems, total, clearCart } = useCart();
-  const navigate  = useNavigate();
-  const [step, setStep]       = useState("form"); // "form" | "success" | "new_customer"
+  const { user, isLoggedIn, token }     = useAuth();
+  const navigate = useNavigate();
+
+  const [step, setStep]     = useState("form"); // "form" | "success"
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
-  const [newCustomer, setNewCustomer] = useState(null); // datos del customer creado
+  const [error, setError]   = useState(null);
+
+  // Estado del prompt de registro (null = no resuelto, false = descartado, true = abriendo modal)
+  const [promptState, setPromptState] = useState(null); // null | "shown" | "dismissed"
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const [form, setForm] = useState({
+    delivery:     DELIVERY_OPTIONS[0],
+    observations: "",
+    // Solo para guests
     fullName:     "",
     locality:     "",
     email:        "",
     whatsapp:     "",
-    observations: "",
-    clientNumber: "",  // ID de cliente existente (opcional)
-    delivery:     DELIVERY_OPTIONS[0],
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-  };
+
+  // Cuándo mostrar el prompt: usuario no logueado y todavía no lo vio/descartó
+  const showPrompt = !isLoggedIn && promptState === null;
 
   const handleSubmit = async () => {
+    // Si todavía no tomó decisión sobre el registro, mostrar prompt primero
+    if (!isLoggedIn && promptState === null) {
+      setPromptState("shown");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Armar el body según si tiene número de cliente o no
       const body = {
         items: cartItems.map((item) => ({
           product_id: item.id,
@@ -48,20 +142,24 @@ export default function CheckoutForm() {
         ].filter(Boolean).join(" | ") || null,
       };
 
-      if (form.clientNumber.trim()) {
-        // Cliente existente — mandar su ID
-        body.customer_id = form.clientNumber.trim();
+      // Headers base
+      const headers = { "Content-Type": "application/json" };
+
+      if (isLoggedIn && token) {
+        // Usuario logueado: mandamos el JWT, el backend asocia por email
+        headers["Authorization"] = `Bearer ${token}`;
       } else {
-        // Cliente nuevo — mandar sus datos
+        // Guest: mandamos los datos del formulario
         body.customer_name  = form.fullName.trim();
         body.customer_email = form.email.trim();
         body.customer_phone = form.whatsapp.trim();
+        body.customer_locality = form.locality.trim();
       }
 
       const res = await fetch(`${API_URL}/api/web-orders`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(body),
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -69,16 +167,8 @@ export default function CheckoutForm() {
         throw new Error(data.message || "Error al enviar el pedido");
       }
 
-      const data = await res.json();
       clearCart();
-
-      // Si se creó un customer nuevo, mostrar pantalla especial con su ID
-      if (data.new_customer) {
-        setNewCustomer(data.new_customer);
-        setStep("new_customer");
-      } else {
-        setStep("success");
-      }
+      setStep("success");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -86,58 +176,18 @@ export default function CheckoutForm() {
     }
   };
 
-  // ── Pantalla: cliente nuevo creado ────────────────────────────────────────
-  if (step === "new_customer") {
-    return (
-      <div className="checkout-success">
-        <CheckCircle2 size={64} strokeWidth={1.5} />
-        <h2>¡Pedido enviado!</h2>
-        <p>Te contactaremos pronto por WhatsApp para confirmar tu pedido.</p>
-
-        <div style={{
-          margin: "24px auto",
-          padding: "20px 28px",
-          background: "#f0fdf4",
-          border: "1.5px solid #86efac",
-          borderRadius: 12,
-          maxWidth: 360,
-          textAlign: "left",
-        }}>
-          <p style={{ fontWeight: 600, marginBottom: 8, fontSize: 15 }}>
-            🎉 ¡Tu número de cliente es:
-          </p>
-          <p style={{
-            fontFamily: "monospace",
-            fontSize: 13,
-            background: "#fff",
-            border: "1px solid #86efac",
-            borderRadius: 8,
-            padding: "10px 14px",
-            wordBreak: "break-all",
-            color: "#166534",
-            fontWeight: 700,
-          }}>
-            {newCustomer.codigo || newCustomer.id}
-          </p>
-          <p style={{ fontSize: 13, color: "#166534", marginTop: 10 }}>
-            Guardalo para tus próximas compras y así acumular tu historial.
-          </p>
-        </div>
-
-        <button className="back-shop-btn" onClick={() => navigate("/")}>
-          Seguir comprando
-        </button>
-      </div>
-    );
-  }
-
-  // ── Pantalla: éxito (cliente existente) ───────────────────────────────────
+  // ── Pantalla de éxito ─────────────────────────────────────────────────────
   if (step === "success") {
     return (
       <div className="checkout-success">
         <CheckCircle2 size={64} strokeWidth={1.5} />
         <h2>¡Pedido enviado!</h2>
         <p>Te contactaremos pronto por WhatsApp para confirmar tu pedido.</p>
+        {isLoggedIn && (
+          <p style={{ fontSize: 14, color: "var(--ink-muted)", marginTop: -12, marginBottom: 24 }}>
+            Podés ver este pedido en <strong>Mis pedidos</strong> desde el menú de tu cuenta.
+          </p>
+        )}
         <button className="back-shop-btn" onClick={() => navigate("/")}>
           Seguir comprando
         </button>
@@ -145,150 +195,192 @@ export default function CheckoutForm() {
     );
   }
 
-  // ── Formulario ────────────────────────────────────────────────────────────
-  const tieneClienteId = form.clientNumber.trim().length > 0;
-  const canSubmit = !loading && cartItems.length > 0 && (
-    tieneClienteId || (form.fullName && form.email && form.whatsapp)
-  );
+  // Validación del botón según contexto
+  const guestValid = form.fullName.trim() && form.email.trim() && form.whatsapp.trim();
+  const canSubmit  = !loading && cartItems.length > 0 && (isLoggedIn || guestValid || promptState === null);
 
   return (
     <div className="checkout-page">
+
+      {/* ── Columna izquierda ─────────────────────────────────────────────── */}
       <div className="checkout-left">
         <button className="back-btn" onClick={() => navigate("/")}>
           <ArrowLeft size={16} /> Volver a la tienda
         </button>
         <h2 className="checkout-title">Finalizá tu pedido</h2>
-        <p className="checkout-subtitle">Completá todos los campos para confirmar</p>
 
-        <div className="checkout-form">
-
-          {/* Número de cliente existente */}
-          <div className="form-group">
-            <label>
-              Número de cliente{" "}
-              <span className="label-hint">(de tu última compra, opcional)</span>
-            </label>
-            <input
-              name="clientNumber"
-              value={form.clientNumber}
-              onChange={handleChange}
-              placeholder="Dejar en blanco si no lo conocés"
-              style={{ maxWidth: 280 }}
-            />
-          </div>
-
-          {/* Si tiene número de cliente, no pedimos más datos */}
-          {tieneClienteId ? (
-            <div style={{
-              padding: "14px 18px",
-              background: "var(--accent-light)",
-              border: "1.5px solid var(--accent)",
-              borderRadius: 10,
-              fontSize: 14,
-              color: "var(--accent)",
-              fontWeight: 500,
-            }}>
-              ✓ Usaremos los datos de tu cuenta. Si el número no es correcto, borralo y completá tus datos manualmente.
+        {/* ── Caso A: usuario logueado ── */}
+        {isLoggedIn ? (
+          <>
+            <div className="logged-user-banner">
+              <div className="logged-user-avatar">
+                {(user.name ?? user.email)[0].toUpperCase()}
+              </div>
+              <div>
+                <p className="logged-user-name">{user.name ?? user.email.split("@")[0]}</p>
+                <span className="logged-user-email">{user.email}</span>
+              </div>
             </div>
-          ) : (
-            <>
+
+            {/* Carrito editable */}
+            <div className="co-cart-section">
+              <h3 className="co-cart-title">Productos en tu pedido</h3>
+              {cartItems.length === 0 ? (
+                <p style={{ color: "var(--ink-muted)", fontSize: 14 }}>Tu carrito está vacío.</p>
+              ) : (
+                <div className="co-cart-list">
+                  {cartItems.map((item) => (
+                    <CheckoutCartItem key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Observaciones y entrega */}
+            <div className="checkout-form">
               <div className="form-group">
-                <label>Apellido y Nombres <span className="label-hint">*</span></label>
-                <input
-                  name="fullName"
-                  value={form.fullName}
-                  onChange={handleChange}
-                  placeholder="Tu nombre completo"
-                />
+                <label>Modalidad de entrega</label>
+                <div className="delivery-options">
+                  {DELIVERY_OPTIONS.map((opt) => (
+                    <label
+                      key={opt}
+                      className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="delivery"
+                        value={opt}
+                        checked={form.delivery === opt}
+                        onChange={handleChange}
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="form-group">
-                <label>Localidad</label>
-                <input
-                  name="locality"
-                  value={form.locality}
+                <label>Observaciones</label>
+                <textarea
+                  name="observations"
+                  value={form.observations}
                   onChange={handleChange}
-                  placeholder="Ciudad / Barrio"
+                  placeholder="Aclaraciones especiales, horarios, etc."
+                  rows={3}
                 />
               </div>
-              <div className="form-row">
+            </div>
+          </>
+        ) : (
+          /* ── Caso B: usuario no logueado ── */
+          <>
+            {/* Prompt de registro (se muestra antes de que tome la decisión) */}
+            {promptState === null && (
+              <RegisterPrompt
+                onRegister={() => { setShowAuthModal(true); }}
+                onDismiss={() => setPromptState("dismissed")}
+              />
+            )}
+
+            {/* Formulario guest (solo visible si descartó el prompt) */}
+            {promptState === "dismissed" && (
+              <div className="checkout-form">
+                <p className="checkout-subtitle">Completá tus datos para confirmar</p>
+
                 <div className="form-group">
-                  <label>Correo electrónico <span className="label-hint">*</span></label>
+                  <label>Apellido y Nombres <span className="label-hint">*</span></label>
                   <input
-                    name="email"
-                    type="email"
-                    value={form.email}
+                    name="fullName"
+                    value={form.fullName}
                     onChange={handleChange}
-                    placeholder="tu@email.com"
+                    placeholder="Tu nombre completo"
                   />
                 </div>
                 <div className="form-group">
-                  <label>N° de WhatsApp <span className="label-hint">*</span></label>
+                  <label>Localidad</label>
                   <input
-                    name="whatsapp"
-                    value={form.whatsapp}
+                    name="locality"
+                    value={form.locality}
                     onChange={handleChange}
-                    placeholder="+54 9 11 ..."
+                    placeholder="Ciudad / Barrio"
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Correo electrónico <span className="label-hint">*</span></label>
+                    <input
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="tu@email.com"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>N° de WhatsApp <span className="label-hint">*</span></label>
+                    <input
+                      name="whatsapp"
+                      value={form.whatsapp}
+                      onChange={handleChange}
+                      placeholder="+54 9 11 ..."
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Modalidad de entrega</label>
+                  <div className="delivery-options">
+                    {DELIVERY_OPTIONS.map((opt) => (
+                      <label
+                        key={opt}
+                        className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
+                      >
+                        <input
+                          type="radio"
+                          name="delivery"
+                          value={opt}
+                          checked={form.delivery === opt}
+                          onChange={handleChange}
+                        />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Observaciones</label>
+                  <textarea
+                    name="observations"
+                    value={form.observations}
+                    onChange={handleChange}
+                    placeholder="Aclaraciones especiales, horarios, etc."
+                    rows={3}
                   />
                 </div>
               </div>
-            </>
-          )}
+            )}
+          </>
+        )}
 
-          <div className="form-group">
-            <label>Observaciones</label>
-            <textarea
-              name="observations"
-              value={form.observations}
-              onChange={handleChange}
-              placeholder="Aclaraciones especiales, horarios, etc."
-              rows={3}
-            />
+        {error && (
+          <div className="checkout-error-banner">
+            ⚠ {error}
           </div>
-
-          <div className="form-group">
-            <label>Modalidad de entrega</label>
-            <div className="delivery-options">
-              {DELIVERY_OPTIONS.map((opt) => (
-                <label
-                  key={opt}
-                  className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value={opt}
-                    checked={form.delivery === opt}
-                    onChange={handleChange}
-                  />
-                  {opt}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {error && (
-            <div style={{
-              padding: "12px 16px",
-              background: "#fef2f2",
-              border: "1.5px solid #fca5a5",
-              borderRadius: 8,
-              color: "#dc2626",
-              fontSize: 14,
-            }}>
-              ⚠ {error}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* ── Resumen del pedido ─────────────────────────────────────────────── */}
+      {/* ── Resumen del pedido (columna derecha) ────────────────────────── */}
       <div className="checkout-right">
         <div className="order-summary">
           <h3>Resumen del pedido</h3>
           <div className="summary-items">
             {cartItems.map((item) => (
               <div key={item.id} className="summary-item">
-                <img src={item.image} alt={item.name} />
+                <img
+                  src={item.image ?? PLACEHOLDER}
+                  alt={item.name}
+                  onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
+                />
                 <div className="summary-item-info">
                   <p>{item.name}</p>
                   <span>x{item.quantity}</span>
@@ -306,13 +398,28 @@ export default function CheckoutForm() {
           <button
             className="submit-order-btn"
             onClick={handleSubmit}
-            disabled={!canSubmit}
+            disabled={!loading && cartItems.length === 0}
           >
-            {loading ? "Enviando..." : "Enviar pedido"}
+            {loading
+              ? "Enviando..."
+              : promptState === null && !isLoggedIn
+                ? "Continuar"
+                : "Enviar pedido"}
           </button>
           <p className="submit-hint">Te contactaremos para confirmar</p>
         </div>
       </div>
+
+      {/* Modal de auth que se abre desde el prompt */}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => {
+            setShowAuthModal(false);
+            // Si después de cerrar el modal ya está logueado, el prompt desaparece solo.
+            // Si cerró sin loguearse, dejamos el prompt visible para que decida.
+          }}
+        />
+      )}
     </div>
   );
 }
