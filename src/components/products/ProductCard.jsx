@@ -12,6 +12,7 @@ export default function ProductCard({ product, onNeedLogin }) {
   const { favorites, toggleFavorite, isLoggedIn } = useAuth();
 
   const [qty, setQty]             = useState(1);
+  const [qtyInput, setQtyInput]   = useState("1");
   const [added, setAdded]         = useState(false);
   const [imgIndex, setImgIndex]   = useState(0);
   const [direction, setDirection] = useState("next");
@@ -91,6 +92,7 @@ export default function ProductCard({ product, onNeedLogin }) {
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
     setQty(1);
+    setQtyInput("1");
   };
 
   const handleFav = async (e) => {
@@ -103,8 +105,6 @@ export default function ProductCard({ product, onNeedLogin }) {
     await toggleFavorite(product.id);
     setTimeout(() => setFavAnim(false), 400);
   };
-
-  const sinStock = product.stock <= 0;
 
   const imgClass = [
     "product-img",
@@ -171,16 +171,48 @@ export default function ProductCard({ product, onNeedLogin }) {
 
           <div className="product-actions">
             <div className="qty-control">
-              <button className="qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))}>
+              <button
+                className="qty-btn"
+                onClick={() => {
+                  const next = Math.max(1, qty - 1);
+                  setQty(next);
+                  setQtyInput(String(next));
+                }}
+              >
                 <Minus size={14} />
               </button>
-              <span className="qty-value">{qty}</span>
-              <button className="qty-btn" onClick={() => setQty((q) => Math.min(product.stock || 99, q + 1))}>
+              <input
+                className="qty-input"
+                type="number"
+                min={1}
+                max={product.stock || 99}
+                value={qtyInput}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setQtyInput(raw);
+                  const n = parseInt(raw, 10);
+                  if (!isNaN(n) && n >= 1) {
+                    setQty(Math.min(n, product.stock || 99));
+                  }
+                }}
+                onBlur={() => {
+                  // Al perder el foco, normalizar al valor real
+                  setQtyInput(String(qty));
+                }}
+              />
+              <button
+                className="qty-btn"
+                onClick={() => {
+                  const next = Math.min(product.stock || 99, qty + 1);
+                  setQty(next);
+                  setQtyInput(String(next));
+                }}
+              >
                 <Plus size={14} />
               </button>
             </div>
 
-            <button className={`add-btn ${added ? "added" : ""}`} onClick={handleAdd} disabled={sinStock}>
+            <button className={`add-btn ${added ? "added" : ""}`} onClick={handleAdd}>
               {added ? <Check size={16} /> : <ShoppingCart size={16} />}
               {added ? "¡Listo!" : "Agregar"}
             </button>

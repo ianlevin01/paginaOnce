@@ -497,3 +497,21 @@ p { margin: 0; }
   background-size: 600px 100%;
   animation: shimmer 1.4s infinite linear;
 }
+.qty-input {
+  width: 2rem;
+  text-align: center;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: inherit;
+  font-family: inherit;
+  color: inherit;
+  -moz-appearance: textfield;
+  padding: 0;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

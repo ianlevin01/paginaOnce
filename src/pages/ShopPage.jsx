@@ -8,18 +8,6 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const PAGE_SIZE = 60;
 const MAX_PRICE = 50000;
 
-// ── Función de ordenamiento local ─────────────────────────────────────────────
-function sortProducts(products, sort) {
-  if (!sort || sort === "default") return products;
-  const arr = [...products];
-  switch (sort) {
-    case "price_asc":  return arr.sort((a, b) => a.price - b.price);
-    case "price_desc": return arr.sort((a, b) => b.price - a.price);
-    case "name_asc":   return arr.sort((a, b) => a.name.localeCompare(b.name, "es"));
-    case "name_desc":  return arr.sort((a, b) => b.name.localeCompare(a.name, "es"));
-    default:           return arr;
-  }
-}
 
 export default function ShopPage() {
   const [products, setProducts]   = useState([]);
@@ -62,18 +50,21 @@ export default function ShopPage() {
   // ── Reset al cambiar categoría o búsqueda ────────────────────────────────
   const prevCatRef    = useRef(filters.categoryId);
   const prevSearchRef = useRef(debouncedSearch);
+  const prevSortRef   = useRef(filters.sort);
 
   useEffect(() => {
     const catChanged    = filters.categoryId !== prevCatRef.current;
     const searchChanged = debouncedSearch    !== prevSearchRef.current;
+    const sortChanged   = filters.sort       !== prevSortRef.current;
     prevCatRef.current    = filters.categoryId;
     prevSearchRef.current = debouncedSearch;
+    prevSortRef.current   = filters.sort;
 
-    if (catChanged || searchChanged) {
+    if (catChanged || searchChanged || sortChanged) {
       setOffset(0);
       setProducts([]);
     }
-  }, [filters.categoryId, debouncedSearch]);
+  }, [filters.categoryId, debouncedSearch, filters.sort]);
 
   // ── Fetch principal ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -87,6 +78,7 @@ export default function ShopPage() {
     } else {
       const params = new URLSearchParams({ limit: PAGE_SIZE, offset });
       if (filters.categoryId) params.set("category_id", filters.categoryId);
+      if (filters.sort && filters.sort !== "default") params.set("sort", filters.sort);
       url = `${API_URL}/api/products?${params}`;
     }
 
@@ -97,7 +89,7 @@ export default function ShopPage() {
       })
       .then((data) => {
         if (cancelled) return;
-        const normalized = data.map(normalizeProduct);
+        const normalized = data.map(normalizeProduct).filter((p) => p.active !== false);
         if (debouncedSearch) {
           setProducts(normalized);
           setHasMore(false);
@@ -110,16 +102,15 @@ export default function ShopPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [debouncedSearch, filters.categoryId, offset]);
+  }, [debouncedSearch, filters.categoryId, filters.sort, offset]);
 
-  // ── Filtro local de precio + ordenamiento ─────────────────────────────────
+  // ── Filtro local de precio (el ordenamiento ya viene del backend) ─────────
   const filtered = useMemo(() => {
-    let result = products;
     if (filters.maxPrice < MAX_PRICE) {
-      result = result.filter((p) => p.price <= filters.maxPrice);
+      return products.filter((p) => p.price <= filters.maxPrice);
     }
-    return sortProducts(result, filters.sort);
-  }, [products, filters.maxPrice, filters.sort]);
+    return products;
+  }, [products, filters.maxPrice]);
 
   return (
     <main className="shop-main">
@@ -197,5 +188,6 @@ function normalizeProduct(p) {
     image:       p.images?.[0]?.url ?? null,
     price,
     stock,
+    active: p.active ?? true,
   };
 }
