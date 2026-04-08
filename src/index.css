@@ -395,14 +395,27 @@ p { margin: 0; }
 .qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .qty-value {
-  width: 28px;
+  width: 32px;
   text-align: center;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-h);
   border-inline: 1px solid var(--border);
   line-height: 30px;
-  user-select: none;
+  cursor: text;
+  outline: none;
+  border-bottom: 1.5px dashed var(--text-muted);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.qty-value:hover {
+  border-bottom-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.qty-value:focus {
+  border-bottom-color: var(--accent);
+  background: var(--accent-light);
 }
 
 /* Add button */

@@ -12,7 +12,6 @@ export default function ProductCard({ product, onNeedLogin }) {
   const { favorites, toggleFavorite, isLoggedIn } = useAuth();
 
   const [qty, setQty]             = useState(1);
-  const [qtyInput, setQtyInput]   = useState("1");
   const [added, setAdded]         = useState(false);
   const [imgIndex, setImgIndex]   = useState(0);
   const [direction, setDirection] = useState("next");
@@ -21,8 +20,10 @@ export default function ProductCard({ product, onNeedLogin }) {
   const [favAnim, setFavAnim]     = useState(false);
   const timerRef                  = useRef(null);
   const animating                 = useRef(false);
+  const qtyRef                    = useRef(null);
 
   const isFav = favorites.has(product.id);
+  const maxQty = product.stock || 99;
 
   const images = (() => {
     const raw  = product.images ?? (product.image ? [product.image] : []);
@@ -87,12 +88,50 @@ export default function ProductCard({ product, onNeedLogin }) {
     return () => clearInterval(timerRef.current);
   }, [total]);
 
+  useEffect(() => {
+    if (qtyRef.current && document.activeElement !== qtyRef.current) {
+      qtyRef.current.textContent = String(qty);
+    }
+  }, [qty]);
+
+  const handleDecrement = () => {
+    setQty((q) => Math.max(1, q - 1));
+  };
+
+  const handleIncrement = () => {
+    setQty((q) => Math.min(maxQty, q + 1));
+  };
+
+  const commitQty = () => {
+    const text = qtyRef.current?.textContent ?? "";
+    const n = parseInt(text, 10);
+    const clamped = isNaN(n) || n < 1 ? 1 : Math.min(n, maxQty);
+    setQty(clamped);
+    if (qtyRef.current) qtyRef.current.textContent = String(clamped);
+  };
+
+  const handleQtyKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      qtyRef.current?.blur();
+    }
+    if (e.key === "Escape") {
+      if (qtyRef.current) qtyRef.current.textContent = String(qty);
+      qtyRef.current?.blur();
+    }
+    if (
+      !e.key.match(/^[0-9]$/) &&
+      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+  };
+
   const handleAdd = () => {
     addToCart(product, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
     setQty(1);
-    setQtyInput("1");
   };
 
   const handleFav = async (e) => {
@@ -123,7 +162,6 @@ export default function ProductCard({ product, onNeedLogin }) {
           onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
         />
 
-        {/* ── Botón favorito ── */}
         <button
           className={`fav-btn ${isFav ? "fav-btn--active" : ""} ${favAnim ? "fav-btn--pop" : ""}`}
           onClick={handleFav}
@@ -173,40 +211,34 @@ export default function ProductCard({ product, onNeedLogin }) {
             <div className="qty-control">
               <button
                 className="qty-btn"
-                onClick={() => {
-                  const next = Math.max(1, qty - 1);
-                  setQty(next);
-                  setQtyInput(String(next));
-                }}
+                onClick={handleDecrement}
+                disabled={qty <= 1}
               >
                 <Minus size={14} />
               </button>
-              <input
-                className="qty-input"
-                type="number"
-                min={1}
-                max={product.stock || 99}
-                value={qtyInput}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setQtyInput(raw);
-                  const n = parseInt(raw, 10);
-                  if (!isNaN(n) && n >= 1) {
-                    setQty(Math.min(n, product.stock || 99));
-                  }
+
+              <span
+                ref={qtyRef}
+                className="qty-value"
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={commitQty}
+                onKeyDown={handleQtyKeyDown}
+                onFocus={(e) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(e.currentTarget);
+                  const sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(range);
                 }}
-                onBlur={() => {
-                  // Al perder el foco, normalizar al valor real
-                  setQtyInput(String(qty));
-                }}
-              />
+              >
+                {qty}
+              </span>
+
               <button
                 className="qty-btn"
-                onClick={() => {
-                  const next = Math.min(product.stock || 99, qty + 1);
-                  setQty(next);
-                  setQtyInput(String(next));
-                }}
+                onClick={handleIncrement}
+                disabled={qty >= maxQty}
               >
                 <Plus size={14} />
               </button>
