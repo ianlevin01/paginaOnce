@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import AuthModal from "../auth/AuthModal";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const DELIVERY_OPTIONS = ["Retiro del local", "Recibe del transporte"];
 const PLACEHOLDER = "https://placehold.co/400x400?text=Sin+imagen";
 

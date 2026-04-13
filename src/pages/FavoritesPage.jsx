@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import ProductCard from "../components/products/ProductCard";
 import AuthModal from "../components/auth/AuthModal";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const PLACEHOLDER = "https://placehold.co/400x400?text=Sin+imagen";
 
 function normalizeProduct(p) {
