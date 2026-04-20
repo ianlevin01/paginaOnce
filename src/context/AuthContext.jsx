@@ -41,11 +41,11 @@ export function AuthProvider({ children }) {
     setUser(user);
   };
 
-  const register = async (email, password, name) => {
+  const register = async (email, password, name, extraData = {}) => {
     const res = await fetch(`${API_URL}/api/shop/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, ...extraData }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message ?? "Error al registrarse");

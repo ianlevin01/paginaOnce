@@ -1,13 +1,14 @@
 // components/orders/OrdersDrawer.jsx
 import { useState, useEffect } from "react";
-import { X, Package, ChevronDown, ChevronUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { X, Package, ChevronDown, ChevronUp, Clock, CheckCircle, AlertCircle, Wrench } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 const STATUS_CONFIG = {
-  pending:   { label: "Pendiente",   icon: Clock,         color: "#f59e0b" },
-  confirmed: { label: "Confirmado",  icon: CheckCircle,   color: "#059669" },
-  completed: { label: "Completado",  icon: CheckCircle,   color: "#059669" },
-  cancelled: { label: "Cancelado",   icon: AlertCircle,   color: "#ef4444" },
+  pending:        { label: "Pendiente",       icon: Clock,        color: "#f59e0b" },
+  en_preparacion: { label: "En preparación",  icon: Wrench,       color: "#8b5cf6" },
+  confirmed:      { label: "Confirmado",      icon: CheckCircle,  color: "#059669" },
+  completed:      { label: "Completado",      icon: CheckCircle,  color: "#059669" },
+  cancelled:      { label: "Cancelado",       icon: AlertCircle,  color: "#ef4444" },
 };
 
 function OrderRow({ order }) {

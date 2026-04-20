@@ -6,24 +6,25 @@ import { useAuth } from "../../context/AuthContext";
 
 const PLACEHOLDER = "https://placehold.co/400x400?text=Sin+imagen";
 const SLIDE_INTERVAL = 6000;
+const ANIM_MS = 420;
 
-export default function ProductCard({ product, onNeedLogin }) {
+export default function ProductCard({ product, onNeedLogin, style }) {
   const { addToCart } = useCart();
   const { favorites, toggleFavorite, isLoggedIn } = useAuth();
 
-  const [qty, setQty]             = useState(1);
-  const [added, setAdded]         = useState(false);
-  const [imgIndex, setImgIndex]   = useState(0);
-  const [direction, setDirection] = useState("next");
-  const [phase, setPhase]         = useState("idle");
-  const [displayed, setDisplayed] = useState(0);
-  const [favAnim, setFavAnim]     = useState(false);
-  const timerRef                  = useRef(null);
-  const animating                 = useRef(false);
-  const qtyRef                    = useRef(null);
+  const [qty, setQty]         = useState(1);
+  const [added, setAdded]     = useState(false);
+  const [favAnim, setFavAnim] = useState(false);
+
+  // Carousel state
+  const [displayed, setDisplayed]   = useState(0);   // index currently shown
+  const [outgoing, setOutgoing]     = useState(null); // { idx, dir } | null
+  const animating   = useRef(false);
+  const displayedRef = useRef(0);
+  const timerRef    = useRef(null);
+  const qtyRef      = useRef(null);
 
   const isFav = favorites.has(product.id);
-  const maxQty = product.stock || 99;
 
   const images = (() => {
     const raw  = product.images ?? (product.image ? [product.image] : []);
@@ -34,30 +35,15 @@ export default function ProductCard({ product, onNeedLogin }) {
   const total = images.length;
 
   const goTo = (nextIdx, dir = "next") => {
-    if (animating.current || nextIdx === displayed) return;
+    if (animating.current || nextIdx === displayedRef.current) return;
     animating.current = true;
-    setDirection(dir);
-    setImgIndex(nextIdx);
-    setPhase("exit");
+    setOutgoing({ idx: displayedRef.current, dir });
+    displayedRef.current = nextIdx;
+    setDisplayed(nextIdx);
     setTimeout(() => {
-      setDisplayed(nextIdx);
-      setPhase("enter");
-      setTimeout(() => {
-        setPhase("idle");
-        animating.current = false;
-      }, 380);
-    }, 350);
-  };
-
-  const prev = (e) => {
-    e.stopPropagation();
-    restartTimer();
-    goTo((displayed - 1 + total) % total, "prev");
-  };
-  const next = (e) => {
-    e.stopPropagation();
-    restartTimer();
-    goTo((displayed + 1) % total, "next");
+      setOutgoing(null);
+      animating.current = false;
+    }, ANIM_MS);
   };
 
   const restartTimer = () => {
@@ -65,19 +51,7 @@ export default function ProductCard({ product, onNeedLogin }) {
     if (total > 1) {
       timerRef.current = setInterval(() => {
         if (!animating.current) {
-          setDisplayed((d) => {
-            const nextD = (d + 1) % total;
-            setDirection("next");
-            setImgIndex(nextD);
-            setPhase("exit");
-            animating.current = true;
-            setTimeout(() => {
-              setDisplayed(nextD);
-              setPhase("enter");
-              setTimeout(() => { setPhase("idle"); animating.current = false; }, 380);
-            }, 350);
-            return d;
-          });
+          goTo((displayedRef.current + 1) % total, "next");
         }
       }, SLIDE_INTERVAL);
     }
@@ -88,41 +62,40 @@ export default function ProductCard({ product, onNeedLogin }) {
     return () => clearInterval(timerRef.current);
   }, [total]);
 
+  const prev = (e) => {
+    e.stopPropagation();
+    restartTimer();
+    goTo((displayedRef.current - 1 + total) % total, "prev");
+  };
+  const next = (e) => {
+    e.stopPropagation();
+    restartTimer();
+    goTo((displayedRef.current + 1) % total, "next");
+  };
+
   useEffect(() => {
     if (qtyRef.current && document.activeElement !== qtyRef.current) {
       qtyRef.current.textContent = String(qty);
     }
   }, [qty]);
 
-  const handleDecrement = () => {
-    setQty((q) => Math.max(1, q - 1));
-  };
-
-  const handleIncrement = () => {
-    setQty((q) => Math.min(maxQty, q + 1));
-  };
+  const handleDecrement = () => setQty((q) => Math.max(1, q - 1));
+  const handleIncrement = () => setQty((q) => q + 1);
 
   const commitQty = () => {
-    const text = qtyRef.current?.textContent ?? "";
-    const n = parseInt(text, 10);
-    const clamped = isNaN(n) || n < 1 ? 1 : Math.min(n, maxQty);
+    const n = parseInt(qtyRef.current?.textContent ?? "", 10);
+    const clamped = isNaN(n) || n < 1 ? 1 : n;
     setQty(clamped);
     if (qtyRef.current) qtyRef.current.textContent = String(clamped);
   };
 
   const handleQtyKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      qtyRef.current?.blur();
-    }
+    if (e.key === "Enter") { e.preventDefault(); qtyRef.current?.blur(); }
     if (e.key === "Escape") {
       if (qtyRef.current) qtyRef.current.textContent = String(qty);
       qtyRef.current?.blur();
     }
-    if (
-      !e.key.match(/^[0-9]$/) &&
-      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
-    ) {
+    if (!e.key.match(/^[0-9]$/) && !["Backspace","Delete","ArrowLeft","ArrowRight","Tab"].includes(e.key)) {
       e.preventDefault();
     }
   };
@@ -136,29 +109,31 @@ export default function ProductCard({ product, onNeedLogin }) {
 
   const handleFav = async (e) => {
     e.stopPropagation();
-    if (!isLoggedIn) {
-      onNeedLogin?.();
-      return;
-    }
+    if (!isLoggedIn) { onNeedLogin?.(); return; }
     setFavAnim(true);
     await toggleFavorite(product.id);
     setTimeout(() => setFavAnim(false), 400);
   };
 
-  const imgClass = [
-    "product-img",
-    phase === "exit"  ? `slide-exit-${direction}`  : "",
-    phase === "enter" ? `slide-enter-${direction}` : "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <div className="product-card">
+    <div className="product-card" style={style}>
       <div className="product-img-wrap">
+
+        {/* Imagen saliente (se va) */}
+        {outgoing !== null && (
+          <img
+            src={images[outgoing.idx]}
+            alt={product.name}
+            className={`product-img slide-exit-${outgoing.dir}`}
+            onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
+          />
+        )}
+
+        {/* Imagen actual (entra o está quieta) */}
         <img
-          key={displayed}
           src={images[displayed]}
           alt={product.name}
-          className={imgClass}
+          className={`product-img${outgoing ? ` slide-enter-${outgoing.dir}` : ""}`}
           onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
         />
 
@@ -186,7 +161,7 @@ export default function ProductCard({ product, onNeedLogin }) {
                   onClick={(e) => {
                     e.stopPropagation();
                     restartTimer();
-                    goTo(i, i > displayed ? "next" : "prev");
+                    goTo(i, i > displayedRef.current ? "next" : "prev");
                   }}
                   aria-label={`Imagen ${i + 1}`}
                 />
@@ -209,11 +184,7 @@ export default function ProductCard({ product, onNeedLogin }) {
 
           <div className="product-actions">
             <div className="qty-control">
-              <button
-                className="qty-btn"
-                onClick={handleDecrement}
-                disabled={qty <= 1}
-              >
+              <button className="qty-btn" onClick={handleDecrement} disabled={qty <= 1}>
                 <Minus size={14} />
               </button>
 
@@ -235,11 +206,7 @@ export default function ProductCard({ product, onNeedLogin }) {
                 {qty}
               </span>
 
-              <button
-                className="qty-btn"
-                onClick={handleIncrement}
-                disabled={qty >= maxQty}
-              >
+              <button className="qty-btn" onClick={handleIncrement}>
                 <Plus size={14} />
               </button>
             </div>

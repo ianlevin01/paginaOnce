@@ -115,12 +115,14 @@ export default function ShopPage() {
   return (
     <main className="shop-main">
       <div className="shop-hero">
+        <div className="hero-orb hero-orb--1" />
+        <div className="hero-orb hero-orb--2" />
+        <div className="hero-orb hero-orb--3" />
         <div className="hero-content">
-          <p className="hero-eyebrow">Bienvenido a</p>
+          <span className="hero-badge">✦ Bienvenido</span>
           <h1 className="hero-title">Oncepuntos</h1>
           <p className="hero-subtitle">Los mejores productos, directo a tu puerta</p>
         </div>
-        <div className="hero-blob" />
       </div>
 
       <div className="shop-content">

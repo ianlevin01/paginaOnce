@@ -37,8 +37,13 @@ export default function ProductGrid({ products, loading, onNeedLogin }) {
 
   return (
     <div className="product-grid">
-      {products.map((p) => (
-        <ProductCard key={p.id} product={p} onNeedLogin={onNeedLogin} />
+      {products.map((p, i) => (
+        <ProductCard
+          key={p.id}
+          product={p}
+          onNeedLogin={onNeedLogin}
+          style={{ '--card-delay': `${Math.min(i, 15) * 0.045}s` }}
+        />
       ))}
     </div>
   );
