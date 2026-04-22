@@ -4,9 +4,10 @@ import FilterBar from "../components/products/FilterBar";
 import ProductGrid from "../components/products/ProductGrid";
 import AuthModal from "../components/auth/AuthModal";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
-const PAGE_SIZE = 60;
-const MAX_PRICE = 50000;
+const API_URL    = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
+const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
+const PAGE_SIZE  = 60;
+const MAX_PRICE  = 50000;
 
 
 export default function ShopPage() {
@@ -29,7 +30,7 @@ export default function ShopPage() {
 
   // ── Cargar categorías ─────────────────────────────────────────────────────
   useEffect(() => {
-    fetch(`${API_URL}/api/products/categories`)
+    fetch(`${API_URL}/api/products/categories?negocio_id=${NEGOCIO_ID}`)
       .then((r) => r.ok ? r.json() : Promise.reject())
       .then(setCategories)
       .catch(() => {});
@@ -74,9 +75,9 @@ export default function ShopPage() {
 
     let url;
     if (debouncedSearch) {
-      url = `${API_URL}/api/products/search?name=${encodeURIComponent(debouncedSearch)}`;
+      url = `${API_URL}/api/products/search?name=${encodeURIComponent(debouncedSearch)}&negocio_id=${NEGOCIO_ID}`;
     } else {
-      const params = new URLSearchParams({ limit: PAGE_SIZE, offset });
+      const params = new URLSearchParams({ limit: PAGE_SIZE, offset, negocio_id: NEGOCIO_ID });
       if (filters.categoryId) params.set("category_id", filters.categoryId);
       if (filters.sort && filters.sort !== "default") params.set("sort", filters.sort);
       url = `${API_URL}/api/products?${params}`;
