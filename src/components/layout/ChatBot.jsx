@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, Sparkles } from "lucide-react";
 
+const API_URL    = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
+const PLACEHOLDER = "https://placehold.co/42x42?text=img";
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
@@ -8,6 +12,7 @@ export default function ChatBot() {
     {
       role: "bot",
       text: "¡Hola! Soy el asistente de Oncepuntos 🛍️ ¿En qué te puedo ayudar hoy?",
+      products: [],
     },
   ]);
   const [input, setInput] = useState("");
@@ -26,41 +31,44 @@ export default function ChatBot() {
   }, [messages, isOpen]);
 
   const sendMessage = async () => {
-  if (!input.trim() || loading) return;
+    if (!input.trim() || loading) return;
 
-  const userMsg = { role: "user", text: input };
-  setMessages((prev) => [...prev, userMsg]);
-  setInput("");
-  setLoading(true);
+    const userMsg = { role: "user", text: input, products: [] };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setLoading(true);
 
-  try {
-    const res = await fetch("https://oncepuntos.duckdns.org/api/ai/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: userMsg.text }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/api/ai/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message:    userMsg.text,
+          negocio_id: NEGOCIO_ID,
+          base_url:   window.location.origin,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    setMessages((prev) => [
-      ...prev,
-      { role: "bot", text: data.reply },
-    ]);
-  } catch (error) {
-    console.error(error);
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "bot",
-        text: "Hubo un error al conectar con el servidor 😢",
-      },
-    ]);
-  } finally {
-    setLoading(false);
-  }
-};
+      setMessages((prev) => [
+        ...prev,
+        {
+          role:     "bot",
+          text:     data.reply ?? "Hubo un error al procesar la respuesta.",
+          products: data.products ?? [],
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: "Hubo un error al conectar con el servidor 😢", products: [] },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="chatbot-wrapper">
@@ -98,7 +106,28 @@ export default function ChatBot() {
                     <Bot size={12} />
                   </div>
                 )}
-                <div className="msg-bubble">{msg.text}</div>
+                <div>
+                  <div className="msg-bubble">{msg.text}</div>
+                  {msg.products?.length > 0 && (
+                    <div className="chat-products">
+                      {msg.products.map((p) => (
+                        <a
+                          key={p.id}
+                          href={`/?buscar=${encodeURIComponent(p.name)}`}
+                          className="chat-product-card"
+                        >
+                          <img
+                            src={p.image_url || PLACEHOLDER}
+                            alt={p.name}
+                            className="chat-product-img"
+                            onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
+                          />
+                          <span className="chat-product-name">{p.name}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
             {loading && (
