@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { X, Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Phone, MapPin, Truck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-const API_URL    = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL    = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
 const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function AuthModal({ onClose }) {

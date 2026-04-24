@@ -13,10 +13,10 @@ npm run preview   # Preview production build
 
 ## Environment
 
-The app reads `VITE_API_URL` (defaults to `http://localhost:3000`). Create a `.env.local` file to override:
+The app reads `VITE_API_URL` (defaults to `https://oncepuntos.duckdns.org`). Create a `.env.local` file to override:
 
 ```
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=https://oncepuntos.duckdns.org
 ```
 
 ## Architecture

@@ -4,7 +4,7 @@ import FilterBar from "../components/products/FilterBar";
 import ProductGrid from "../components/products/ProductGrid";
 import AuthModal from "../components/auth/AuthModal";
 
-const API_URL    = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL    = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
 const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
 const PAGE_SIZE  = 60;
 const MAX_PRICE  = 50000;
