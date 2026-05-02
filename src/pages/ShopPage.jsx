@@ -98,7 +98,7 @@ export default function ShopPage() {
           setHasMore(false);
         } else {
           setProducts((prev) => offset === 0 ? normalized : [...prev, ...normalized]);
-          setHasMore(normalized.length === PAGE_SIZE);
+          setHasMore(data.length === PAGE_SIZE);
         }
       })
       .catch((e) => { if (!cancelled) setError(e.message); })
