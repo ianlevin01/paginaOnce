@@ -144,7 +144,7 @@ p { margin: 0; }
 }
 
 /* Content */
-.shop-content { padding: 36px 40px 64px; flex: 1; }
+.shop-content { padding: 24px 16px 48px; flex: 1; }
 
 @media (max-width: 768px) {
   .shop-content { padding: 24px 16px 48px; }
@@ -227,8 +227,8 @@ p { margin: 0; }
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .empty-state {
