@@ -1605,3 +1605,6 @@ body {
     transition-duration: .01ms !important;
   }
 }
+.back-btn:hover{
+  color: #059669;
+}
