@@ -1597,6 +1597,23 @@ body {
   .auth-row-2 { grid-template-columns: 1fr; }
 }
 
+/* ─── MOBILE: elimina backdrop-filter para evitar pantalla en blanco en Chrome mobile al abrir teclado ── */
+@media (max-width: 768px) {
+  .header {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(247,249,255,.97);
+  }
+  .filterbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: #ffffff;
+  }
+  .hero-orb {
+    animation: none;
+  }
+}
+
 /* ─── MOTION PREFERENCES ─────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
