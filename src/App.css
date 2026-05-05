@@ -119,6 +119,34 @@ body {
   to   { transform: translateX(0); }
 }
 
+/* ─── TOPBAR ─────────────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.topbar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.topbar-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #fff;
+}
+.topbar-item--link {
+  text-decoration: none;
+  transition: opacity .15s;
+}
+.topbar-item--link:hover { opacity: .80; }
+
 /* ─── HEADER ─────────────────────────────────────────────────────────────── */
 .header {
   position: sticky; top: 0; z-index: 100;
@@ -1597,7 +1625,7 @@ body {
   .auth-row-2 { grid-template-columns: 1fr; }
 }
 
-/* ─── MOBILE: elimina backdrop-filter para evitar pantalla en blanco en Chrome mobile al abrir teclado ── */
+/* ─── MOBILE: elimina backdrop-filter y blur pesado para evitar pantalla en blanco al abrir teclado ── */
 @media (max-width: 768px) {
   .header {
     backdrop-filter: none;
@@ -1609,9 +1637,8 @@ body {
     -webkit-backdrop-filter: none;
     background: #ffffff;
   }
-  .hero-orb {
-    animation: none;
-  }
+  /* Los orbs usan filter:blur(80px) con animación — muy pesado en GPU móvil (causa pantalla blanca en iOS/Chrome) */
+  .hero-orb { display: none; }
 }
 
 /* ─── MOTION PREFERENCES ─────────────────────────────────────────────────── */

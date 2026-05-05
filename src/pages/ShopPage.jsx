@@ -27,7 +27,7 @@ export default function ShopPage() {
     search:     initialSearch,
     categoryId: null,
     maxPrice:   MAX_PRICE,
-    sort:       "default",
+    sort:       "name_asc",
   });
 
   // ── Cargar categorías ─────────────────────────────────────────────────────
