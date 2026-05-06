@@ -19,10 +19,11 @@ export default function ProductCard({ product, onNeedLogin, style }) {
   // Carousel state
   const [displayed, setDisplayed]   = useState(0);   // index currently shown
   const [outgoing, setOutgoing]     = useState(null); // { idx, dir } | null
-  const animating   = useRef(false);
+  const animating    = useRef(false);
   const displayedRef = useRef(0);
-  const timerRef    = useRef(null);
-  const qtyRef      = useRef(null);
+  const timerRef     = useRef(null);
+  const animTimerRef = useRef(null); // ← FIX: ref para el timeout de animación
+  const qtyRef       = useRef(null);
 
   const isFav = favorites.has(product.id);
 
@@ -34,13 +35,16 @@ export default function ProductCard({ product, onNeedLogin, style }) {
 
   const total = images.length;
 
+  // ← FIX: se cancela animTimerRef antes de crear uno nuevo
   const goTo = (nextIdx, dir = "next") => {
     if (animating.current || nextIdx === displayedRef.current) return;
     animating.current = true;
     setOutgoing({ idx: displayedRef.current, dir });
     displayedRef.current = nextIdx;
     setDisplayed(nextIdx);
-    setTimeout(() => {
+
+    clearTimeout(animTimerRef.current);
+    animTimerRef.current = setTimeout(() => {
       setOutgoing(null);
       animating.current = false;
     }, ANIM_MS);
@@ -57,9 +61,13 @@ export default function ProductCard({ product, onNeedLogin, style }) {
     }
   };
 
+  // ← FIX: se limpia también animTimerRef al desmontar el componente
   useEffect(() => {
     restartTimer();
-    return () => clearInterval(timerRef.current);
+    return () => {
+      clearInterval(timerRef.current);
+      clearTimeout(animTimerRef.current);
+    };
   }, [total]);
 
   const prev = (e) => {
