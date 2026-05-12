@@ -32,7 +32,7 @@ export default function AuthModal({ onClose }) {
   }, [mode]);
 
   const isRegisterValid =
-    !!email && !!password && !!phone && !!direccion && !!transporte;
+    !!email && !!password && !!phone && !!direccion;
 
   const submit = async () => {
     setError(null);
@@ -149,7 +149,7 @@ export default function AuthModal({ onClose }) {
               </div>
 
               <div className="auth-field">
-                <label className="auth-label">Transporte <span className="auth-required">*</span></label>
+                <label className="auth-label">Transporte <span className="auth-optional">(opcional)</span></label>
                 <div className="auth-input-wrap">
                   <Truck size={16} className="auth-input-icon" />
                   <select className="auth-input auth-select" value={transporte} onChange={(e) => setTransporte(e.target.value)}>
