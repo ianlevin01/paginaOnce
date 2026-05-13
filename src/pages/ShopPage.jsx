@@ -17,7 +17,6 @@ export default function ShopPage() {
   const [offset, setOffset]       = useState(0);
   const [hasMore, setHasMore]     = useState(true);
   const [showAuthModal, setShowAuthModal]   = useState(false);
-  const [showScrollTop, setShowScrollTop]   = useState(false);
   const contentRef      = useRef(null);
   const scrollRestored  = useRef(false);
 
@@ -37,7 +36,6 @@ export default function ShopPage() {
   useEffect(() => {
     const handleScroll = () => {
       sessionStorage.setItem("shopScrollY", String(window.scrollY));
-      setShowScrollTop(window.scrollY > 500);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -189,15 +187,13 @@ export default function ShopPage() {
 
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
 
-      {showScrollTop && (
-        <button
-          className="scroll-top-btn"
-          onClick={() => contentRef.current?.scrollIntoView({ behavior: "smooth" })}
-          aria-label="Volver al inicio de productos"
-        >
-          ↑
-        </button>
-      )}
+      <button
+        className="scroll-top-btn"
+        onClick={() => contentRef.current?.scrollIntoView({ behavior: "smooth" })}
+        aria-label="Volver al inicio de productos"
+      >
+        ↑
+      </button>
     </main>
   );
 }
