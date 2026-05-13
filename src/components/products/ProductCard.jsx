@@ -1,6 +1,7 @@
 // components/products/ProductCard.jsx
-import { useState, useEffect, useRef } from "react";
-import { Plus, Minus, ShoppingCart, Check, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { Plus, Minus, ShoppingCart, Check, ChevronLeft, ChevronRight, Heart, X } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -15,6 +16,7 @@ export default function ProductCard({ product, onNeedLogin, style }) {
   const [qty, setQty]         = useState(1);
   const [added, setAdded]     = useState(false);
   const [favAnim, setFavAnim] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // index | null
 
   // Carousel state
   const [displayed, setDisplayed]   = useState(0);   // index currently shown
@@ -87,6 +89,21 @@ export default function ProductCard({ product, onNeedLogin, style }) {
     }
   }, [qty]);
 
+  const closeLightbox = useCallback(() => setLightbox(null), []);
+  const lbPrev = useCallback(() => setLightbox((i) => (i - 1 + total) % total), [total]);
+  const lbNext = useCallback(() => setLightbox((i) => (i + 1) % total), [total]);
+
+  useEffect(() => {
+    if (lightbox === null) return;
+    const handler = (e) => {
+      if (e.key === "Escape")      closeLightbox();
+      if (e.key === "ArrowLeft")   lbPrev();
+      if (e.key === "ArrowRight")  lbNext();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lightbox, closeLightbox, lbPrev, lbNext]);
+
   const handleDecrement = () => setQty((q) => Math.max(1, q - 1));
   const handleIncrement = () => setQty((q) => q + 1);
 
@@ -124,6 +141,7 @@ export default function ProductCard({ product, onNeedLogin, style }) {
   };
 
   return (
+    <>
     <div className="product-card" style={style}>
       <div className="product-img-wrap">
 
@@ -143,6 +161,8 @@ export default function ProductCard({ product, onNeedLogin, style }) {
           alt={product.name}
           className={`product-img${outgoing ? ` slide-enter-${outgoing.dir}` : ""}`}
           onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
+          onClick={() => setLightbox(displayed)}
+          style={{ cursor: "zoom-in" }}
         />
 
         <button
@@ -183,6 +203,7 @@ export default function ProductCard({ product, onNeedLogin, style }) {
 
       <div className="product-body">
         <h3 className="product-name">{product.name}</h3>
+        {product.code && <p className="product-code">CÓDIGO: {product.code}</p>}
         {product.description && <p className="product-desc">{product.description}</p>}
 
         <div className="product-footer">
@@ -227,5 +248,53 @@ export default function ProductCard({ product, onNeedLogin, style }) {
         </div>
       </div>
     </div>
+
+    {lightbox !== null && createPortal(
+      <div
+        className="lightbox-overlay"
+        onClick={closeLightbox}
+        role="dialog"
+        aria-modal="true"
+      >
+        <button className="lightbox-close" onClick={closeLightbox} aria-label="Cerrar">
+          <X size={22} />
+        </button>
+
+        {total > 1 && (
+          <button className="lightbox-arrow lightbox-arrow--left" onClick={(e) => { e.stopPropagation(); lbPrev(); }} aria-label="Anterior">
+            <ChevronLeft size={28} />
+          </button>
+        )}
+
+        <img
+          src={images[lightbox]}
+          alt={product.name}
+          className="lightbox-img"
+          onClick={(e) => e.stopPropagation()}
+          onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
+        />
+
+        {total > 1 && (
+          <button className="lightbox-arrow lightbox-arrow--right" onClick={(e) => { e.stopPropagation(); lbNext(); }} aria-label="Siguiente">
+            <ChevronRight size={28} />
+          </button>
+        )}
+
+        {total > 1 && (
+          <div className="lightbox-dots">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                className={`lightbox-dot${i === lightbox ? " active" : ""}`}
+                onClick={(e) => { e.stopPropagation(); setLightbox(i); }}
+                aria-label={`Imagen ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

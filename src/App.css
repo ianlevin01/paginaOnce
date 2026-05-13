@@ -57,10 +57,11 @@ body {
 }
 
 /* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.06); }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.32); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.55); }
+html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin; }
 
 /* ─── KEYFRAMES ──────────────────────────────────────────────────────────── */
 @keyframes fadeUp {
@@ -1559,6 +1560,76 @@ body {
     transition-duration: .01ms !important;
   }
 }
+/* ─── PRODUCT CODE ────────────────────────────────────────────────────────── */
+.product-code {
+  font-size: 10px; font-weight: 500;
+  letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-muted); opacity: .55;
+  margin-bottom: 4px;
+}
+
+/* ─── SCROLL TO TOP ───────────────────────────────────────────────────────── */
+.scroll-top-btn {
+  position: fixed; bottom: 28px; right: 28px;
+  width: 44px; height: 44px;
+  border-radius: 50%; border: none; cursor: pointer;
+  background: var(--gradient);
+  color: #fff; font-size: 20px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-lg); z-index: 200;
+  transition: opacity .2s, transform .2s;
+}
+.scroll-top-btn:hover { opacity: .85; transform: translateY(-3px); }
+
+/* ─── LIGHTBOX ────────────────────────────────────────────────────────────── */
+.lightbox-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.88); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  animation: lbFadeIn .16s ease;
+}
+@keyframes lbFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.lightbox-img {
+  max-width: 90vw; max-height: 88vh;
+  object-fit: contain; border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+  user-select: none;
+}
+.lightbox-close {
+  position: absolute; top: 18px; right: 20px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+  color: #fff; border-radius: 50%;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,.28); }
+.lightbox-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+  color: #fff; border-radius: 50%;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s;
+}
+.lightbox-arrow:hover { background: rgba(255,255,255,.3); }
+.lightbox-arrow--left  { left: 20px; }
+.lightbox-arrow--right { right: 20px; }
+.lightbox-dots {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+}
+.lightbox-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,.35); border: none;
+  cursor: pointer; padding: 0;
+  transition: background .15s, transform .15s;
+}
+.lightbox-dot.active { background: #fff; transform: scale(1.35); }
+
 .back-btn:hover{
   color: #059669;
 }

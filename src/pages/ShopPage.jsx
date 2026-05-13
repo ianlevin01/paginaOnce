@@ -1,5 +1,5 @@
 // pages/ShopPage.jsx
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import FilterBar from "../components/products/FilterBar";
 import ProductGrid from "../components/products/ProductGrid";
 import AuthModal from "../components/auth/AuthModal";
@@ -16,7 +16,10 @@ export default function ShopPage() {
   const [error, setError]         = useState(null);
   const [offset, setOffset]       = useState(0);
   const [hasMore, setHasMore]     = useState(true);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAuthModal, setShowAuthModal]   = useState(false);
+  const [showScrollTop, setShowScrollTop]   = useState(false);
+  const contentRef      = useRef(null);
+  const scrollRestored  = useRef(false);
 
   // { id, name }[]
   const [categories, setCategories] = useState([]);
@@ -29,6 +32,27 @@ export default function ShopPage() {
     maxPrice:   MAX_PRICE,
     sort:       "default",
   });
+
+  // ── Guardar y restaurar posición de scroll ───────────────────────────────
+  useEffect(() => {
+    const handleScroll = () => {
+      sessionStorage.setItem("shopScrollY", String(window.scrollY));
+      setShowScrollTop(window.scrollY > 500);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && products.length > 0 && !scrollRestored.current) {
+      const saved = parseInt(sessionStorage.getItem("shopScrollY") ?? "0", 10);
+      if (saved > 0) {
+        scrollRestored.current = true;
+        // Small timeout lets the grid finish painting before scrolling
+        setTimeout(() => window.scrollTo({ top: saved, behavior: "instant" }), 80);
+      }
+    }
+  }, [loading, products]);
 
   // ── Cargar categorías ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -121,7 +145,7 @@ export default function ShopPage() {
         <img src="/banner.png" alt="Oncepuntos" className="hero-banner" />
       </div>
 
-      <div className="shop-content">
+      <div className="shop-content" ref={contentRef}>
         <FilterBar
           filters={filters}
           setFilters={setFilters}
@@ -164,6 +188,16 @@ export default function ShopPage() {
       </div>
 
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+
+      {showScrollTop && (
+        <button
+          className="scroll-top-btn"
+          onClick={() => contentRef.current?.scrollIntoView({ behavior: "smooth" })}
+          aria-label="Volver al inicio de productos"
+        >
+          ↑
+        </button>
+      )}
     </main>
   );
 }
@@ -179,6 +213,7 @@ function normalizeProduct(p) {
 
   return {
     id:          p.id,
+    code:        p.code ?? "",
     name:        p.name,
     description: p.description ?? "",
     category:    p.category_name ?? "",
