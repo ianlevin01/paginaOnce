@@ -2,6 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, Sparkles } from "lucide-react";
 
 const API_URL    = import.meta.env.VITE_API_URL ?? "https://oncepuntos.duckdns.org";
+
+function renderMarkdown(text) {
+  let html = text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\n/g, "<br>");
+  return html;
+}
 const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
 const PLACEHOLDER = "https://placehold.co/42x42?text=img";
 
@@ -107,7 +116,13 @@ export default function ChatBot() {
                   </div>
                 )}
                 <div>
-                  <div className="msg-bubble">{msg.text}</div>
+                  <div
+                    className="msg-bubble"
+                    {...(msg.role === "bot"
+                      ? { dangerouslySetInnerHTML: { __html: renderMarkdown(msg.text) } }
+                      : { children: msg.text }
+                    )}
+                  />
                   {msg.products?.length > 0 && (
                     <div className="chat-products">
                       {msg.products.map((p) => (

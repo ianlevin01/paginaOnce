@@ -1047,7 +1047,11 @@ html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin
 .msg-bubble {
   max-width: 80%; padding: 10px 14px;
   border-radius: 16px; font-size: 13px; line-height: 1.5;
+  word-break: break-word; overflow-wrap: anywhere;
 }
+.msg-bubble a { color: var(--accent); text-decoration: underline; }
+.msg-bubble a:hover { opacity: .8; }
+.msg-bubble strong { font-weight: 700; }
 .bot .msg-bubble {
   background: var(--bg-card); border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
