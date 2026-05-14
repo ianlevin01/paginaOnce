@@ -1,5 +1,6 @@
 // pages/ShopPage.jsx
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { ChevronUp } from "lucide-react";
 import FilterBar from "../components/products/FilterBar";
 import ProductGrid from "../components/products/ProductGrid";
 import AuthModal from "../components/auth/AuthModal";
@@ -16,9 +17,9 @@ export default function ShopPage() {
   const [error, setError]         = useState(null);
   const [offset, setOffset]       = useState(0);
   const [hasMore, setHasMore]     = useState(true);
-  const [showAuthModal, setShowAuthModal]   = useState(false);
-  const contentRef      = useRef(null);
-  const scrollRestored  = useRef(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const contentRef = useRef(null);
 
   // { id, name }[]
   const [categories, setCategories] = useState([]);
@@ -32,25 +33,11 @@ export default function ShopPage() {
     sort:       "default",
   });
 
-  // ── Guardar y restaurar posición de scroll ───────────────────────────────
   useEffect(() => {
-    const handleScroll = () => {
-      sessionStorage.setItem("shopScrollY", String(window.scrollY));
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setShowScrollBtn(window.scrollY > 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    if (!loading && products.length > 0 && !scrollRestored.current) {
-      const saved = parseInt(sessionStorage.getItem("shopScrollY") ?? "0", 10);
-      if (saved > 0) {
-        scrollRestored.current = true;
-        // Small timeout lets the grid finish painting before scrolling
-        setTimeout(() => window.scrollTo({ top: saved, behavior: "instant" }), 80);
-      }
-    }
-  }, [loading, products]);
 
   // ── Cargar categorías ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -187,13 +174,15 @@ export default function ShopPage() {
 
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
 
-      <button
-        className="scroll-top-btn"
-        onClick={() => contentRef.current?.scrollIntoView({ behavior: "smooth" })}
-        aria-label="Volver al inicio de productos"
-      >
-        ↑
-      </button>
+      {showScrollBtn && (
+        <button
+          className="scroll-top-btn"
+          onClick={() => contentRef.current?.scrollIntoView({ behavior: "smooth" })}
+          aria-label="Volver al inicio de productos"
+        >
+          <ChevronUp size={26} strokeWidth={2.5} />
+        </button>
+      )}
     </main>
   );
 }

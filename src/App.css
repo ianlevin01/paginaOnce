@@ -1570,16 +1570,16 @@ html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin
 
 /* ─── SCROLL TO TOP ───────────────────────────────────────────────────────── */
 .scroll-top-btn {
-  position: fixed; bottom: 28px; right: 28px;
-  width: 44px; height: 44px;
+  position: fixed; top: calc(var(--header-h) + 12px); right: 28px;
+  width: 46px; height: 46px;
   border-radius: 50%; border: none; cursor: pointer;
   background: var(--gradient);
-  color: #fff; font-size: 20px; font-weight: 700;
+  color: #fff;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-lg); z-index: 200;
-  transition: opacity .2s, transform .2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,.22); z-index: 200;
+  transition: box-shadow .2s, transform .18s;
 }
-.scroll-top-btn:hover { opacity: .85; transform: translateY(-3px); }
+.scroll-top-btn:hover { box-shadow: 0 6px 24px rgba(0,0,0,.32); transform: scale(1.08); }
 
 /* ─── LIGHTBOX ────────────────────────────────────────────────────────────── */
 .lightbox-overlay {
