@@ -16,8 +16,13 @@ export function AuthProvider({ children }) {
     const storedToken = localStorage.getItem("shop_token");
     const storedUser  = localStorage.getItem("shop_user");
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch {
+        localStorage.removeItem("shop_token");
+        localStorage.removeItem("shop_user");
+      }
     }
     setLoading(false);
   }, []);

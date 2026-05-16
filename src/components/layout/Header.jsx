@@ -68,10 +68,10 @@ export default function Header() {
                   onClick={() => setShowUserMenu((v) => !v)}
                 >
                   <div className="user-avatar">
-                    {(user.name ?? user.email)[0].toUpperCase()}
+                    {(user.name || user.email || "?")[0].toUpperCase()}
                   </div>
                   <span className="user-name-label">
-                    {user.name ?? user.email.split("@")[0]}
+                    {user.name || user.email?.split("@")[0] || "Usuario"}
                   </span>
                   <ChevronDown size={14} className={`user-chevron ${showUserMenu ? "open" : ""}`} />
                 </button>
