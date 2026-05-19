@@ -106,7 +106,8 @@ export default function CheckoutForm() {
     delivery:     DELIVERY_OPTIONS[0],
     observations: "",
     // Solo para guests
-    fullName:     "",
+    firstName:    "",
+    lastName:     "",
     locality:     "",
     email:        "",
     whatsapp:     "",
@@ -152,7 +153,7 @@ export default function CheckoutForm() {
         headers["Authorization"] = `Bearer ${token}`;
       } else {
         // Guest: mandamos los datos del formulario
-        body.customer_name  = form.fullName.trim();
+        body.customer_name  = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
         body.customer_email = form.email.trim();
         body.customer_phone = form.whatsapp.trim();
         body.customer_locality = form.locality.trim();
@@ -198,7 +199,7 @@ export default function CheckoutForm() {
   }
 
   // Validación del botón según contexto
-  const guestValid = form.fullName.trim() && form.email.trim() && form.whatsapp.trim();
+  const guestValid = form.firstName.trim() && form.lastName.trim() && form.email.trim() && form.whatsapp.trim();
   const canSubmit  = !loading && cartItems.length > 0 && (isLoggedIn || guestValid || promptState === null);
 
   return (
@@ -288,14 +289,25 @@ export default function CheckoutForm() {
               <div className="checkout-form">
                 <p className="checkout-subtitle">Completá tus datos para confirmar</p>
 
-                <div className="form-group">
-                  <label>Apellido y Nombres <span className="label-hint">*</span></label>
-                  <input
-                    name="fullName"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    placeholder="Tu nombre completo"
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nombre <span className="label-hint">*</span></label>
+                    <input
+                      name="firstName"
+                      value={form.firstName}
+                      onChange={handleChange}
+                      placeholder="Juan"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Apellido <span className="label-hint">*</span></label>
+                    <input
+                      name="lastName"
+                      value={form.lastName}
+                      onChange={handleChange}
+                      placeholder="García"
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Localidad</label>
