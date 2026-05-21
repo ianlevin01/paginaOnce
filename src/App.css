@@ -1621,7 +1621,7 @@ html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin
 .product-code {
   font-size: 10px; font-weight: 500;
   letter-spacing: .07em; text-transform: uppercase;
-  color: var(--ink-muted); opacity: .55;
+  color: var(--ink-2, #4a5568); opacity: .8;
   margin-bottom: 4px;
 }
 
