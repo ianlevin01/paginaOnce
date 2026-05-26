@@ -1740,6 +1740,8 @@ html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin
   }
   /* Espacio para que el contenido no quede tapado por la barra */
   .checkout-page { padding-bottom: 90px; }
+  /* Ocultar resumen lateral en mobile — la barra fija ya tiene el total y el CTA */
+  .checkout-right { display: none; }
 }
 
 /* ─── RESPONSIVE: tablet intermedio 641–800px ────────────────────────────── */
