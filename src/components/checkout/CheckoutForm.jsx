@@ -198,8 +198,8 @@ export default function CheckoutForm() {
     );
   }
 
-  // Validación del botón según contexto
-  const guestValid = form.firstName.trim() && form.lastName.trim() && form.email.trim() && form.whatsapp.trim();
+  // Validación: nombre + apellido obligatorios, y al menos email O teléfono
+  const guestValid = form.firstName.trim() && form.lastName.trim() && (form.email.trim() || form.whatsapp.trim());
   const canSubmit  = !loading && cartItems.length > 0 && (isLoggedIn || guestValid || promptState === null);
 
   return (
@@ -320,7 +320,7 @@ export default function CheckoutForm() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Correo electrónico <span className="label-hint">*</span></label>
+                    <label>Correo electrónico <span className="label-hint">(o teléfono)</span></label>
                     <input
                       name="email"
                       type="email"
@@ -330,7 +330,7 @@ export default function CheckoutForm() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>N° de WhatsApp <span className="label-hint">*</span></label>
+                    <label>N° de WhatsApp <span className="label-hint">(o email)</span></label>
                     <input
                       name="whatsapp"
                       value={form.whatsapp}
@@ -427,13 +427,27 @@ export default function CheckoutForm() {
       {/* Modal de auth que se abre desde el prompt */}
       {showAuthModal && (
         <AuthModal
-          onClose={() => {
-            setShowAuthModal(false);
-            // Si después de cerrar el modal ya está logueado, el prompt desaparece solo.
-            // Si cerró sin loguearse, dejamos el prompt visible para que decida.
-          }}
+          onClose={() => { setShowAuthModal(false); }}
         />
       )}
+
+      {/* Barra sticky para mobile — siempre visible */}
+      <div className="checkout-mobile-bar">
+        <div className="checkout-mobile-bar-total">
+          Total <strong>${total.toLocaleString("es-AR")}</strong>
+        </div>
+        <button
+          className="checkout-mobile-bar-btn"
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+        >
+          {loading
+            ? "Enviando..."
+            : promptState === null && !isLoggedIn
+              ? "Continuar"
+              : "Enviar pedido"}
+        </button>
+      </div>
     </div>
   );
 }

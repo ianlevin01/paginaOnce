@@ -55,7 +55,10 @@ export default function Header() {
       </div>
       <header className="header">
         <div className="header-inner">
-          <div className="logo" style={{ cursor: "pointer" }} onClick={() => navigate("/")}>
+          <div className="logo" style={{ cursor: "pointer" }} onClick={() => {
+            if (window.location.pathname === "/" && !window.location.search) window.location.reload();
+            else navigate("/");
+          }}>
             <span className="logo-mark">●</span>
             <span className="logo-text">ONCE<strong>PUNTOS</strong></span>
           </div>

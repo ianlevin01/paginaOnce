@@ -19,7 +19,9 @@ export default function ShopPage() {
   const [hasMore, setHasMore]     = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const contentRef = useRef(null);
+  const contentRef  = useRef(null);
+  const sentinelRef = useRef(null);
+  const restoredRef = useRef(false);
 
   // { id, name }[]
   const [categories, setCategories] = useState([]);
@@ -33,11 +35,29 @@ export default function ShopPage() {
     sort:       "default",
   });
 
+  // Scroll top button + guardar posición en sessionStorage
   useEffect(() => {
-    const onScroll = () => setShowScrollBtn(window.scrollY > 300);
+    let saveTimer;
+    const onScroll = () => {
+      setShowScrollBtn(window.scrollY > 300);
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => sessionStorage.setItem("shopScrollY", String(window.scrollY)), 250);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => { window.removeEventListener("scroll", onScroll); clearTimeout(saveTimer); };
   }, []);
+
+  // Restaurar posición después de que los productos del primer batch se pinten
+  useEffect(() => {
+    if (restoredRef.current || loading || products.length === 0) return;
+    const saved = Number(sessionStorage.getItem("shopScrollY") ?? 0);
+    if (saved < 100) return;
+    restoredRef.current = true;
+    // doble rAF: espera a que el navegador pinte el DOM antes de hacer scroll
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo({ top: saved, behavior: "instant" });
+    }));
+  }, [loading, products.length]);
 
   // ── Cargar categorías ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -132,6 +152,23 @@ export default function ShopPage() {
     return () => { cancelled = true; };
   }, [debouncedSearch, filters.categoryId, filters.sort, debouncedMaxPrice, offset]);
 
+  // Infinite scroll: observa el sentinel al final del listado
+  // (va después de todas las declaraciones de estado para poder referenciar debouncedSearch)
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const ob = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading && !debouncedSearch) {
+          setOffset((prev) => prev + PAGE_SIZE);
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    ob.observe(el);
+    return () => ob.disconnect();
+  }, [hasMore, loading, debouncedSearch]);
+
   return (
     <main className="shop-main">
       <div className="shop-hero">
@@ -162,20 +199,12 @@ export default function ShopPage() {
           onNeedLogin={() => setShowAuthModal(true)}
         />
 
-        {hasMore && !loading && !debouncedSearch && (
-          <div style={{ textAlign: "center", marginTop: "2rem" }}>
-            <button
-              className="btn-load-more"
-              onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-            >
-              Cargar más productos
-            </button>
-          </div>
-        )}
+        {/* Sentinel para infinite scroll */}
+        {!debouncedSearch && <div ref={sentinelRef} style={{ height: 1 }} />}
 
         {loading && products.length > 0 && (
-          <div style={{ textAlign: "center", marginTop: "1rem", opacity: 0.5 }}>
-            Cargando más...
+          <div style={{ textAlign: "center", marginTop: "1.5rem", opacity: 0.5, fontSize: 14 }}>
+            Cargando más productos...
           </div>
         )}
       </div>

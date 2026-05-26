@@ -1690,3 +1690,93 @@ html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin
 .back-btn:hover{
   color: #059669;
 }
+
+/* ─── CHECKOUT MOBILE BAR ─────────────────────────────────────────────────── */
+/* Oculta en desktop (la columna derecha ya tiene el botón visible) */
+.checkout-mobile-bar { display: none; }
+
+@media (max-width: 900px) {
+  /* Barra fija en la parte inferior — siempre visible */
+  .checkout-mobile-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 150;
+    padding: 12px 20px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(15,23,42,.12);
+    gap: 14px;
+    align-items: center;
+  }
+  .checkout-mobile-bar-total {
+    flex: 1;
+    font-family: var(--ff-display);
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .checkout-mobile-bar-total strong {
+    font-size: 20px;
+    font-weight: 800;
+  }
+  .checkout-mobile-bar-btn {
+    padding: 12px 24px;
+    background: var(--gradient);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-family: var(--ff-body);
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: var(--shadow-accent);
+    transition: opacity .2s;
+    flex-shrink: 0;
+  }
+  .checkout-mobile-bar-btn:disabled {
+    opacity: .40;
+    cursor: not-allowed;
+  }
+  /* Espacio para que el contenido no quede tapado por la barra */
+  .checkout-page { padding-bottom: 90px; }
+}
+
+/* ─── RESPONSIVE: tablet intermedio 641–800px ────────────────────────────── */
+@media (max-width: 800px) and (min-width: 641px) {
+  .header-inner { padding: 0 20px; }
+  .shop-content  { padding: 28px 16px 72px; }
+  .cart-drawer   { width: 380px; }
+  .filterbar     { padding: 16px 18px; }
+}
+
+/* ─── RESPONSIVE: móvil (≤640px) — mejoras complementarias ─────────────────
+   Las reglas principales ya están definidas arriba; aquí completamos
+   lo que faltaba sin pisar lo existente.                                    */
+@media (max-width: 640px) {
+  /* Cajón de carrito / pedidos: ancho total en pantallas chicas */
+  .cart-drawer { width: 100%; }
+
+  /* Nombre y precio del producto más compactos en grilla de 2 col */
+  .product-name  { font-size: 13px; }
+  .product-price { font-size: 19px; }
+
+  /* Checkout: título e hijo más pequeños */
+  .checkout-title    { font-size: 26px; }
+  .checkout-subtitle { font-size: 14px; margin-bottom: 24px; }
+
+  /* Drawer de pedidos: barra derecha puede wrappear */
+  .order-row-right { flex-wrap: wrap; justify-content: flex-end; }
+
+  /* Favoritos: grilla igual que el catálogo (2 col) */
+  .favorites-main { padding: 20px 12px 60px; }
+
+  /* Botón "Cargar más" full-width */
+  .btn-load-more { width: 100%; text-align: center; }
+
+  /* Precio del carrito más compacto */
+  .cart-total-amount { font-size: 22px; }
+
+  /* Chatbot: ventana un poco más alta en móvil */
+  .chat-window { max-height: 420px; }
+}
