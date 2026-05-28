@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, ArrowLeft, Plus, Minus, Trash2,
-  LogIn, X, UserPlus
+  LogIn, UserPlus
 } from "lucide-react";
 import AuthModal from "../auth/AuthModal";
 
@@ -30,30 +30,18 @@ function CheckoutCartItem({ item }) {
         <span className="co-cart-item-unit">${item.price.toLocaleString("es-AR")} c/u</span>
       </div>
       <div className="co-cart-item-controls">
-        <button
-          className="qty-btn"
-          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-          aria-label="Restar"
-        >
+        <button className="qty-btn" onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Restar">
           <Minus size={13} />
         </button>
         <span className="qty-value">{item.quantity}</span>
-        <button
-          className="qty-btn"
-          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-          aria-label="Sumar"
-        >
+        <button className="qty-btn" onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Sumar">
           <Plus size={13} />
         </button>
       </div>
       <span className="co-cart-item-price">
         ${(item.price * item.quantity).toLocaleString("es-AR")}
       </span>
-      <button
-        className="co-cart-item-remove"
-        onClick={() => removeFromCart(item.id)}
-        aria-label="Eliminar"
-      >
+      <button className="co-cart-item-remove" onClick={() => removeFromCart(item.id)} aria-label="Eliminar">
         <Trash2 size={15} />
       </button>
     </div>
@@ -70,7 +58,8 @@ export default function CheckoutForm() {
   const [loading,         setLoading]         = useState(false);
   const [error,           setError]           = useState(null);
   const [showAuthModal,   setShowAuthModal]   = useState(false);
-  const [loginDismissed,  setLoginDismissed]  = useState(false);
+  // guestChosen: false = mostrando pantalla de elección, true = mostrando formulario
+  const [guestChosen,     setGuestChosen]     = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const [form, setForm] = useState({
@@ -86,18 +75,26 @@ export default function CheckoutForm() {
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  // Validación de campos guest
+  // Validación guest
   const hasFirstName = form.firstName.trim().length > 0;
   const hasLastName  = form.lastName.trim().length > 0;
   const hasContact   = form.email.trim().length > 0 || form.whatsapp.trim().length > 0;
-  const guestValid   = isLoggedIn || (hasFirstName && hasLastName && hasContact);
+  const guestValid   = isLoggedIn || (guestChosen && hasFirstName && hasLastName && hasContact);
   const canSubmit    = !loading && cartItems.length > 0 && guestValid;
 
+  // Avanzar al formulario guest y volver al tope de la página
+  const handleContinueAsGuest = () => {
+    setGuestChosen(true);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
   const handleSubmit = async () => {
+    if (!isLoggedIn && !guestChosen) {
+      handleContinueAsGuest();
+      return;
+    }
     if (!guestValid) {
       setSubmitAttempted(true);
-      // Hacer scroll al primer campo con error en mobile
-      document.querySelector(".input-error")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -170,6 +167,13 @@ export default function CheckoutForm() {
     );
   }
 
+  // Texto del botón mobile
+  const mobileBarLabel = loading
+    ? "Enviando..."
+    : (!isLoggedIn && !guestChosen)
+      ? "Continuar sin cuenta"
+      : "Enviar pedido";
+
   return (
     <div className="checkout-page">
 
@@ -180,7 +184,7 @@ export default function CheckoutForm() {
         </button>
         <h2 className="checkout-title">Finalizá tu pedido</h2>
 
-        {/* ── Caso A: usuario logueado ── */}
+        {/* ── Caso A: logueado ── */}
         {isLoggedIn ? (
           <>
             <div className="logged-user-banner">
@@ -199,9 +203,7 @@ export default function CheckoutForm() {
                 <p style={{ color: "var(--ink-muted)", fontSize: 14 }}>Tu carrito está vacío.</p>
               ) : (
                 <div className="co-cart-list">
-                  {cartItems.map((item) => (
-                    <CheckoutCartItem key={item.id} item={item} />
-                  ))}
+                  {cartItems.map((item) => <CheckoutCartItem key={item.id} item={item} />)}
                 </div>
               )}
             </div>
@@ -211,17 +213,8 @@ export default function CheckoutForm() {
                 <label>Modalidad de entrega</label>
                 <div className="delivery-options">
                   {DELIVERY_OPTIONS.map((opt) => (
-                    <label
-                      key={opt}
-                      className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
-                    >
-                      <input
-                        type="radio"
-                        name="delivery"
-                        value={opt}
-                        checked={form.delivery === opt}
-                        onChange={handleChange}
-                      />
+                    <label key={opt} className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}>
+                      <input type="radio" name="delivery" value={opt} checked={form.delivery === opt} onChange={handleChange} />
                       {opt}
                     </label>
                   ))}
@@ -229,159 +222,102 @@ export default function CheckoutForm() {
               </div>
               <div className="form-group">
                 <label>Observaciones</label>
-                <textarea
-                  name="observations"
-                  value={form.observations}
-                  onChange={handleChange}
-                  placeholder="Aclaraciones especiales, horarios, etc."
-                  rows={3}
-                />
+                <textarea name="observations" value={form.observations} onChange={handleChange}
+                  placeholder="Aclaraciones especiales, horarios, etc." rows={3} />
               </div>
             </div>
           </>
+
+        ) : !guestChosen ? (
+          /* ── Caso B: pantalla de elección (login o guest) ── */
+          <div className="register-prompt">
+            <div className="register-prompt-icon">
+              <UserPlus size={22} />
+            </div>
+            <div className="register-prompt-text">
+              <p className="register-prompt-title">¿Cómo querés continuar?</p>
+              <p className="register-prompt-sub">
+                Iniciá sesión para ver tu historial de pedidos, o continuá sin cuenta.
+              </p>
+            </div>
+            <div className="register-prompt-actions">
+              <button
+                className="register-prompt-btn register-prompt-btn--primary"
+                onClick={() => setShowAuthModal(true)}
+              >
+                <LogIn size={15} /> Ingresar / Registrarse
+              </button>
+              <button
+                className="register-prompt-btn register-prompt-btn--ghost"
+                onClick={handleContinueAsGuest}
+              >
+                Continuar sin cuenta
+              </button>
+            </div>
+          </div>
+
         ) : (
-          /* ── Caso B: usuario no logueado ── */
-          <>
-            {/* Sugerencia de login — no bloqueante, descartable */}
-            {!loginDismissed && (
-              <div className="register-prompt">
-                <button
-                  className="register-prompt-close"
-                  onClick={() => setLoginDismissed(true)}
-                  aria-label="Cerrar"
-                >
-                  <X size={14} />
-                </button>
-                <div className="register-prompt-icon">
-                  <UserPlus size={22} />
-                </div>
-                <div className="register-prompt-text">
-                  <p className="register-prompt-title">¿Tenés cuenta?</p>
-                  <p className="register-prompt-sub">
-                    Iniciá sesión para ver tu historial de pedidos y completar más rápido.
-                  </p>
-                </div>
-                <div className="register-prompt-actions">
-                  <button
-                    className="register-prompt-btn register-prompt-btn--primary"
-                    onClick={() => setShowAuthModal(true)}
-                  >
-                    <LogIn size={15} /> Ingresar / Registrarse
-                  </button>
-                </div>
+          /* ── Caso C: formulario guest ── */
+          <div className="checkout-form">
+            <p className="checkout-subtitle">Completá tus datos para confirmar el pedido</p>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Nombre <span className="label-hint">*</span></label>
+                <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Juan"
+                  className={submitAttempted && !hasFirstName ? "input-error" : ""} autoFocus />
+                {submitAttempted && !hasFirstName && <span className="field-error">Ingresá tu nombre</span>}
               </div>
+              <div className="form-group">
+                <label>Apellido <span className="label-hint">*</span></label>
+                <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="García"
+                  className={submitAttempted && !hasLastName ? "input-error" : ""} />
+                {submitAttempted && !hasLastName && <span className="field-error">Ingresá tu apellido</span>}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Localidad</label>
+              <input name="locality" value={form.locality} onChange={handleChange} placeholder="Ciudad / Barrio" />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Correo electrónico <span className="label-hint">*</span></label>
+                <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="tu@email.com"
+                  className={submitAttempted && !hasContact ? "input-error" : ""} />
+              </div>
+              <div className="form-group">
+                <label>N° de WhatsApp <span className="label-hint">*</span></label>
+                <input name="whatsapp" value={form.whatsapp} onChange={handleChange} placeholder="+54 9 11 ..."
+                  className={submitAttempted && !hasContact ? "input-error" : ""} />
+              </div>
+            </div>
+            {submitAttempted && !hasContact && (
+              <span className="field-error">Ingresá tu email o número de WhatsApp</span>
             )}
 
-            {/* Formulario guest — siempre visible */}
-            <div className="checkout-form">
-              <p className="checkout-subtitle">Completá tus datos para confirmar el pedido</p>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Nombre <span className="label-hint">*</span></label>
-                  <input
-                    name="firstName"
-                    value={form.firstName}
-                    onChange={handleChange}
-                    placeholder="Juan"
-                    className={submitAttempted && !hasFirstName ? "input-error" : ""}
-                  />
-                  {submitAttempted && !hasFirstName && (
-                    <span className="field-error">Ingresá tu nombre</span>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label>Apellido <span className="label-hint">*</span></label>
-                  <input
-                    name="lastName"
-                    value={form.lastName}
-                    onChange={handleChange}
-                    placeholder="García"
-                    className={submitAttempted && !hasLastName ? "input-error" : ""}
-                  />
-                  {submitAttempted && !hasLastName && (
-                    <span className="field-error">Ingresá tu apellido</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Localidad</label>
-                <input
-                  name="locality"
-                  value={form.locality}
-                  onChange={handleChange}
-                  placeholder="Ciudad / Barrio"
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Correo electrónico <span className="label-hint">*</span></label>
-                  <input
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="tu@email.com"
-                    className={submitAttempted && !hasContact ? "input-error" : ""}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>N° de WhatsApp <span className="label-hint">*</span></label>
-                  <input
-                    name="whatsapp"
-                    value={form.whatsapp}
-                    onChange={handleChange}
-                    placeholder="+54 9 11 ..."
-                    className={submitAttempted && !hasContact ? "input-error" : ""}
-                  />
-                </div>
-              </div>
-              {submitAttempted && !hasContact && (
-                <span className="field-error">Ingresá tu email o número de WhatsApp</span>
-              )}
-
-              <div className="form-group">
-                <label>Modalidad de entrega</label>
-                <div className="delivery-options">
-                  {DELIVERY_OPTIONS.map((opt) => (
-                    <label
-                      key={opt}
-                      className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
-                    >
-                      <input
-                        type="radio"
-                        name="delivery"
-                        value={opt}
-                        checked={form.delivery === opt}
-                        onChange={handleChange}
-                      />
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Observaciones</label>
-                <textarea
-                  name="observations"
-                  value={form.observations}
-                  onChange={handleChange}
-                  placeholder="Aclaraciones especiales, horarios, etc."
-                  rows={3}
-                />
+            <div className="form-group">
+              <label>Modalidad de entrega</label>
+              <div className="delivery-options">
+                {DELIVERY_OPTIONS.map((opt) => (
+                  <label key={opt} className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}>
+                    <input type="radio" name="delivery" value={opt} checked={form.delivery === opt} onChange={handleChange} />
+                    {opt}
+                  </label>
+                ))}
               </div>
             </div>
-          </>
-        )}
 
-        {error && (
-          <div className="checkout-error-banner">
-            ⚠ {error}
+            <div className="form-group">
+              <label>Observaciones</label>
+              <textarea name="observations" value={form.observations} onChange={handleChange}
+                placeholder="Aclaraciones especiales, horarios, etc." rows={3} />
+            </div>
           </div>
         )}
+
+        {error && <div className="checkout-error-banner">⚠ {error}</div>}
       </div>
 
       {/* ── Resumen del pedido (columna derecha / oculto en mobile) ───────── */}
@@ -391,11 +327,8 @@ export default function CheckoutForm() {
           <div className="summary-items">
             {cartItems.map((item) => (
               <div key={item.id} className="summary-item">
-                <img
-                  src={item.image ?? PLACEHOLDER}
-                  alt={item.name}
-                  onError={(e) => { e.currentTarget.src = PLACEHOLDER; }}
-                />
+                <img src={item.image ?? PLACEHOLDER} alt={item.name}
+                  onError={(e) => { e.currentTarget.src = PLACEHOLDER; }} />
                 <div className="summary-item-info">
                   <p>{item.name}</p>
                   <span>x{item.quantity}</span>
@@ -410,22 +343,16 @@ export default function CheckoutForm() {
             <span>Total</span>
             <strong>${total.toLocaleString("es-AR")}</strong>
           </div>
-          <button
-            className="submit-order-btn"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-          >
-            {loading ? "Enviando..." : "Enviar pedido"}
+          <button className="submit-order-btn" onClick={handleSubmit} disabled={!canSubmit && guestChosen}>
+            {loading ? "Enviando..." : (!isLoggedIn && !guestChosen) ? "Continuar sin cuenta" : "Enviar pedido"}
           </button>
           <p className="submit-hint">Te contactaremos para confirmar</p>
         </div>
       </div>
 
-      {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
-      )}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
 
-      {/* Barra sticky para mobile — siempre visible */}
+      {/* Barra sticky mobile */}
       <div className="checkout-mobile-bar">
         <div className="checkout-mobile-bar-total">
           Total <strong>${total.toLocaleString("es-AR")}</strong>
@@ -433,9 +360,9 @@ export default function CheckoutForm() {
         <button
           className="checkout-mobile-bar-btn"
           onClick={handleSubmit}
-          disabled={!canSubmit}
+          disabled={loading || (guestChosen && !guestValid)}
         >
-          {loading ? "Enviando..." : "Enviar pedido"}
+          {mobileBarLabel}
         </button>
       </div>
     </div>
