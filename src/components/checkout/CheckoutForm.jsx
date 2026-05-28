@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, ArrowLeft, Plus, Minus, Trash2,
-  User, LogIn, X, UserPlus
+  LogIn, X, UserPlus
 } from "lucide-react";
 import AuthModal from "../auth/AuthModal";
 
@@ -60,52 +60,22 @@ function CheckoutCartItem({ item }) {
   );
 }
 
-// ── Banner "¿Querés registrarte?" ─────────────────────────────────────────────
-function RegisterPrompt({ onRegister, onDismiss }) {
-  return (
-    <div className="register-prompt">
-      <button className="register-prompt-close" onClick={onDismiss} aria-label="Cerrar">
-        <X size={14} />
-      </button>
-      <div className="register-prompt-icon">
-        <UserPlus size={22} />
-      </div>
-      <div className="register-prompt-text">
-        <p className="register-prompt-title">¿Querés guardar tus pedidos?</p>
-        <p className="register-prompt-sub">
-          Registrate o iniciá sesión para ver tu historial de compras y agilizar tus próximos pedidos.
-        </p>
-      </div>
-      <div className="register-prompt-actions">
-        <button className="register-prompt-btn register-prompt-btn--primary" onClick={onRegister}>
-          <LogIn size={15} /> Ingresar / Registrarse
-        </button>
-        <button className="register-prompt-btn register-prompt-btn--ghost" onClick={onDismiss}>
-          Continuar sin cuenta
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function CheckoutForm() {
   const { cartItems, total, clearCart } = useCart();
   const { user, isLoggedIn, token }     = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep]     = useState("form"); // "form" | "success"
-  const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState(null);
-
-  // Estado del prompt de registro (null = no resuelto, false = descartado, true = abriendo modal)
-  const [promptState, setPromptState] = useState(null); // null | "shown" | "dismissed"
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [step,            setStep]            = useState("form");
+  const [loading,         setLoading]         = useState(false);
+  const [error,           setError]           = useState(null);
+  const [showAuthModal,   setShowAuthModal]   = useState(false);
+  const [loginDismissed,  setLoginDismissed]  = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const [form, setForm] = useState({
     delivery:     DELIVERY_OPTIONS[0],
     observations: "",
-    // Solo para guests
     firstName:    "",
     lastName:     "",
     locality:     "",
@@ -116,13 +86,18 @@ export default function CheckoutForm() {
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  // Cuándo mostrar el prompt: usuario no logueado y todavía no lo vio/descartó
-  const showPrompt = !isLoggedIn && promptState === null;
+  // Validación de campos guest
+  const hasFirstName = form.firstName.trim().length > 0;
+  const hasLastName  = form.lastName.trim().length > 0;
+  const hasContact   = form.email.trim().length > 0 || form.whatsapp.trim().length > 0;
+  const guestValid   = isLoggedIn || (hasFirstName && hasLastName && hasContact);
+  const canSubmit    = !loading && cartItems.length > 0 && guestValid;
 
   const handleSubmit = async () => {
-    // Si todavía no tomó decisión sobre el registro, mostrar prompt primero
-    if (!isLoggedIn && promptState === null) {
-      setPromptState("shown");
+    if (!guestValid) {
+      setSubmitAttempted(true);
+      // Hacer scroll al primer campo con error en mobile
+      document.querySelector(".input-error")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -145,17 +120,14 @@ export default function CheckoutForm() {
         ].filter(Boolean).join(" | ") || null,
       };
 
-      // Headers base
       const headers = { "Content-Type": "application/json" };
 
       if (isLoggedIn && token) {
-        // Usuario logueado: mandamos el JWT, el backend asocia por email
         headers["Authorization"] = `Bearer ${token}`;
       } else {
-        // Guest: mandamos los datos del formulario
-        body.customer_name  = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
-        body.customer_email = form.email.trim();
-        body.customer_phone = form.whatsapp.trim();
+        body.customer_name     = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
+        body.customer_email    = form.email.trim();
+        body.customer_phone    = form.whatsapp.trim();
         body.customer_locality = form.locality.trim();
       }
 
@@ -198,10 +170,6 @@ export default function CheckoutForm() {
     );
   }
 
-  // Validación: nombre + apellido obligatorios, y al menos email O teléfono
-  const guestValid = form.firstName.trim() && form.lastName.trim() && (form.email.trim() || form.whatsapp.trim());
-  const canSubmit  = !loading && cartItems.length > 0 && (isLoggedIn || guestValid || promptState === null);
-
   return (
     <div className="checkout-page">
 
@@ -225,7 +193,6 @@ export default function CheckoutForm() {
               </div>
             </div>
 
-            {/* Carrito editable */}
             <div className="co-cart-section">
               <h3 className="co-cart-title">Productos en tu pedido</h3>
               {cartItems.length === 0 ? (
@@ -239,7 +206,6 @@ export default function CheckoutForm() {
               )}
             </div>
 
-            {/* Observaciones y entrega */}
             <div className="checkout-form">
               <div className="form-group">
                 <label>Modalidad de entrega</label>
@@ -276,103 +242,138 @@ export default function CheckoutForm() {
         ) : (
           /* ── Caso B: usuario no logueado ── */
           <>
-            {/* Prompt de registro (se muestra antes de que tome la decisión) */}
-            {promptState === null && (
-              <RegisterPrompt
-                onRegister={() => { setShowAuthModal(true); }}
-                onDismiss={() => setPromptState("dismissed")}
-              />
-            )}
-
-            {/* Formulario guest (solo visible si descartó el prompt) */}
-            {promptState === "dismissed" && (
-              <div className="checkout-form">
-                <p className="checkout-subtitle">Completá tus datos para confirmar</p>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Nombre <span className="label-hint">*</span></label>
-                    <input
-                      name="firstName"
-                      value={form.firstName}
-                      onChange={handleChange}
-                      placeholder="Juan"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Apellido <span className="label-hint">*</span></label>
-                    <input
-                      name="lastName"
-                      value={form.lastName}
-                      onChange={handleChange}
-                      placeholder="García"
-                    />
-                  </div>
+            {/* Sugerencia de login — no bloqueante, descartable */}
+            {!loginDismissed && (
+              <div className="register-prompt">
+                <button
+                  className="register-prompt-close"
+                  onClick={() => setLoginDismissed(true)}
+                  aria-label="Cerrar"
+                >
+                  <X size={14} />
+                </button>
+                <div className="register-prompt-icon">
+                  <UserPlus size={22} />
                 </div>
-                <div className="form-group">
-                  <label>Localidad</label>
-                  <input
-                    name="locality"
-                    value={form.locality}
-                    onChange={handleChange}
-                    placeholder="Ciudad / Barrio"
-                  />
+                <div className="register-prompt-text">
+                  <p className="register-prompt-title">¿Tenés cuenta?</p>
+                  <p className="register-prompt-sub">
+                    Iniciá sesión para ver tu historial de pedidos y completar más rápido.
+                  </p>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Correo electrónico <span className="label-hint">(o teléfono)</span></label>
-                    <input
-                      name="email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="tu@email.com"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>N° de WhatsApp <span className="label-hint">(o email)</span></label>
-                    <input
-                      name="whatsapp"
-                      value={form.whatsapp}
-                      onChange={handleChange}
-                      placeholder="+54 9 11 ..."
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Modalidad de entrega</label>
-                  <div className="delivery-options">
-                    {DELIVERY_OPTIONS.map((opt) => (
-                      <label
-                        key={opt}
-                        className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
-                      >
-                        <input
-                          type="radio"
-                          name="delivery"
-                          value={opt}
-                          checked={form.delivery === opt}
-                          onChange={handleChange}
-                        />
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Observaciones</label>
-                  <textarea
-                    name="observations"
-                    value={form.observations}
-                    onChange={handleChange}
-                    placeholder="Aclaraciones especiales, horarios, etc."
-                    rows={3}
-                  />
+                <div className="register-prompt-actions">
+                  <button
+                    className="register-prompt-btn register-prompt-btn--primary"
+                    onClick={() => setShowAuthModal(true)}
+                  >
+                    <LogIn size={15} /> Ingresar / Registrarse
+                  </button>
                 </div>
               </div>
             )}
+
+            {/* Formulario guest — siempre visible */}
+            <div className="checkout-form">
+              <p className="checkout-subtitle">Completá tus datos para confirmar el pedido</p>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Nombre <span className="label-hint">*</span></label>
+                  <input
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleChange}
+                    placeholder="Juan"
+                    className={submitAttempted && !hasFirstName ? "input-error" : ""}
+                  />
+                  {submitAttempted && !hasFirstName && (
+                    <span className="field-error">Ingresá tu nombre</span>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Apellido <span className="label-hint">*</span></label>
+                  <input
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleChange}
+                    placeholder="García"
+                    className={submitAttempted && !hasLastName ? "input-error" : ""}
+                  />
+                  {submitAttempted && !hasLastName && (
+                    <span className="field-error">Ingresá tu apellido</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Localidad</label>
+                <input
+                  name="locality"
+                  value={form.locality}
+                  onChange={handleChange}
+                  placeholder="Ciudad / Barrio"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Correo electrónico <span className="label-hint">*</span></label>
+                  <input
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="tu@email.com"
+                    className={submitAttempted && !hasContact ? "input-error" : ""}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>N° de WhatsApp <span className="label-hint">*</span></label>
+                  <input
+                    name="whatsapp"
+                    value={form.whatsapp}
+                    onChange={handleChange}
+                    placeholder="+54 9 11 ..."
+                    className={submitAttempted && !hasContact ? "input-error" : ""}
+                  />
+                </div>
+              </div>
+              {submitAttempted && !hasContact && (
+                <span className="field-error">Ingresá tu email o número de WhatsApp</span>
+              )}
+
+              <div className="form-group">
+                <label>Modalidad de entrega</label>
+                <div className="delivery-options">
+                  {DELIVERY_OPTIONS.map((opt) => (
+                    <label
+                      key={opt}
+                      className={`delivery-option ${form.delivery === opt ? "selected" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="delivery"
+                        value={opt}
+                        checked={form.delivery === opt}
+                        onChange={handleChange}
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Observaciones</label>
+                <textarea
+                  name="observations"
+                  value={form.observations}
+                  onChange={handleChange}
+                  placeholder="Aclaraciones especiales, horarios, etc."
+                  rows={3}
+                />
+              </div>
+            </div>
           </>
         )}
 
@@ -383,7 +384,7 @@ export default function CheckoutForm() {
         )}
       </div>
 
-      {/* ── Resumen del pedido (columna derecha) ────────────────────────── */}
+      {/* ── Resumen del pedido (columna derecha / oculto en mobile) ───────── */}
       <div className="checkout-right">
         <div className="order-summary">
           <h3>Resumen del pedido</h3>
@@ -412,23 +413,16 @@ export default function CheckoutForm() {
           <button
             className="submit-order-btn"
             onClick={handleSubmit}
-            disabled={!loading && cartItems.length === 0}
+            disabled={!canSubmit}
           >
-            {loading
-              ? "Enviando..."
-              : promptState === null && !isLoggedIn
-                ? "Continuar"
-                : "Enviar pedido"}
+            {loading ? "Enviando..." : "Enviar pedido"}
           </button>
           <p className="submit-hint">Te contactaremos para confirmar</p>
         </div>
       </div>
 
-      {/* Modal de auth que se abre desde el prompt */}
       {showAuthModal && (
-        <AuthModal
-          onClose={() => { setShowAuthModal(false); }}
-        />
+        <AuthModal onClose={() => setShowAuthModal(false)} />
       )}
 
       {/* Barra sticky para mobile — siempre visible */}
@@ -441,11 +435,7 @@ export default function CheckoutForm() {
           onClick={handleSubmit}
           disabled={!canSubmit}
         >
-          {loading
-            ? "Enviando..."
-            : promptState === null && !isLoggedIn
-              ? "Continuar"
-              : "Enviar pedido"}
+          {loading ? "Enviando..." : "Enviar pedido"}
         </button>
       </div>
     </div>
