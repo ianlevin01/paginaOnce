@@ -9,7 +9,7 @@ export default function CartItem({ item }) {
       <img src={item.image} alt={item.name} className="cart-item-img" />
       <div className="cart-item-info">
         <p className="cart-item-name">{item.name}</p>
-        <p className="cart-item-price">${(item.price * item.quantity).toLocaleString()}</p>
+        <p className="cart-item-price">${(item.price * item.quantity).toLocaleString("es-AR")}</p>
         <div className="cart-item-controls">
           <button className="qty-btn sm" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
             <Minus size={12} />

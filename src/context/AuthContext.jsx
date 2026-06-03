@@ -17,6 +17,15 @@ export function AuthProvider({ children }) {
     const storedUser  = localStorage.getItem("shop_user");
     if (storedToken && storedUser) {
       try {
+        // Verificar expiración sin validar firma (decodifica el payload en base64)
+        const payload = JSON.parse(atob(storedToken.split(".")[1]));
+        if (payload.exp && payload.exp < Date.now() / 1000) {
+          // Token expirado — limpiar sesión
+          localStorage.removeItem("shop_token");
+          localStorage.removeItem("shop_user");
+          setLoading(false);
+          return;
+        }
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch {

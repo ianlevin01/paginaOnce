@@ -27,7 +27,7 @@ function CheckoutCartItem({ item }) {
       />
       <div className="co-cart-item-info">
         <p className="co-cart-item-name">{item.name}</p>
-        <span className="co-cart-item-unit">${item.price.toLocaleString("es-AR")} c/u</span>
+        <span className="co-cart-item-unit">${Number(item.price ?? 0).toLocaleString("es-AR")} c/u</span>
       </div>
       <div className="co-cart-item-controls">
         <button className="qty-btn" onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Restar">
@@ -39,7 +39,7 @@ function CheckoutCartItem({ item }) {
         </button>
       </div>
       <span className="co-cart-item-price">
-        ${(item.price * item.quantity).toLocaleString("es-AR")}
+        ${(Number(item.price ?? 0) * item.quantity).toLocaleString("es-AR")}
       </span>
       <button className="co-cart-item-remove" onClick={() => removeFromCart(item.id)} aria-label="Eliminar">
         <Trash2 size={15} />
@@ -189,10 +189,10 @@ export default function CheckoutForm() {
           <>
             <div className="logged-user-banner">
               <div className="logged-user-avatar">
-                {(user.name ?? user.email)[0].toUpperCase()}
+                {((user.name || user.email || "?")[0] ?? "?").toUpperCase()}
               </div>
               <div>
-                <p className="logged-user-name">{user.name ?? user.email.split("@")[0]}</p>
+                <p className="logged-user-name">{user.name || user.email?.split("@")[0] || ""}</p>
                 <span className="logged-user-email">{user.email}</span>
               </div>
             </div>
@@ -334,7 +334,7 @@ export default function CheckoutForm() {
                   <span>x{item.quantity}</span>
                 </div>
                 <span className="summary-item-price">
-                  ${(item.price * item.quantity).toLocaleString("es-AR")}
+                  ${(Number(item.price ?? 0) * item.quantity).toLocaleString("es-AR")}
                 </span>
               </div>
             ))}

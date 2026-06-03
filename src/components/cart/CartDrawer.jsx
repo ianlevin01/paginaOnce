@@ -50,7 +50,7 @@ export default function CartDrawer() {
           <div className="cart-drawer-footer">
             <div className="cart-total-row">
               <span>Total estimado</span>
-              <span className="cart-total-amount">${total.toLocaleString()}</span>
+              <span className="cart-total-amount">${total.toLocaleString("es-AR")}</span>
             </div>
             <button className="checkout-btn" onClick={handleCheckout}>
               Confirmar pedido
