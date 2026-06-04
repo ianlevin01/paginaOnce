@@ -45,7 +45,7 @@ export default function Header() {
         <div className="topbar-inner">
           <span className="topbar-item">
             <MapPin size={14} />
-            PERON 2263 | PASTEUR 280
+            PERON 2263
           </span>
           <a className="topbar-item topbar-item--link" href="https://wa.me/541138385284" target="_blank" rel="noopener noreferrer">
             <WhatsAppIcon />
