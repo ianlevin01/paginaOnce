@@ -51,7 +51,7 @@ function CheckoutCartItem({ item }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function CheckoutForm() {
   const { cartItems, total, clearCart } = useCart();
-  const { user, isLoggedIn, token }     = useAuth();
+  const { user, isLoggedIn, token, logout } = useAuth();
   const navigate = useNavigate();
 
   const [step,            setStep]            = useState("form");
@@ -136,6 +136,15 @@ export default function CheckoutForm() {
 
       if (!res.ok) {
         const data = await res.json();
+        // Si es 401 (sesión expirada), desloguear y mostrar mensaje
+        if (res.status === 401) {
+          setError(data.message || "Sesión expirada. Por favor, inicia sesión nuevamente.");
+          setTimeout(() => {
+            logout();
+            window.location.reload();
+          }, 2000);
+          return;
+        }
         throw new Error(data.message || "Error al enviar el pedido");
       }
 
