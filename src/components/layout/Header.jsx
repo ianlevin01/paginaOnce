@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { ShoppingBag, LogOut, Package, Heart, ChevronDown, LogIn, MapPin } from "lucide-react";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import AuthModal from "../auth/AuthModal";
 import OrdersDrawer from "../orders/OrdersDrawer";
 
@@ -19,6 +19,7 @@ export default function Header() {
   const { itemCount, setIsCartOpen } = useCart();
   const { user, isLoggedIn, logout, favorites } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [showAuthModal,    setShowAuthModal]    = useState(false);
   const [showUserMenu,     setShowUserMenu]     = useState(false);
@@ -33,6 +34,13 @@ export default function Header() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    if (location.state?.showAuthModal) {
+      setShowAuthModal(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleLogout = () => {
     logout();

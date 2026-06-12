@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 
 const AuthContext = createContext();
 
-const API_URL = import.meta.env.VITE_API_URL ?? "https://gestionmayorista.online";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 export function AuthProvider({ children }) {
   const [user, setUser]         = useState(null);       // { id, email, name }
@@ -123,6 +123,29 @@ export function AuthProvider({ children }) {
     return res.json();
   }, [token]);
 
+  // ── Password Reset ────────────────────────────────────────────────────────────
+  const requestPasswordReset = async (email) => {
+    const res = await fetch(`${API_URL}/api/shop/password-reset/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message ?? "Error al solicitar restablecimiento");
+    return data;
+  };
+
+  const resetPassword = async (token, password) => {
+    const res = await fetch(`${API_URL}/api/shop/password-reset/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message ?? "Error al restablecer contraseña");
+    return data;
+  };
+
   return (
     <AuthContext.Provider value={{
       user, token, loading,
@@ -130,6 +153,8 @@ export function AuthProvider({ children }) {
       register, login, logout,
       toggleFavorite,
       fetchOrders,
+      requestPasswordReset,
+      resetPassword,
       isLoggedIn: !!user,
     }}>
       {children}

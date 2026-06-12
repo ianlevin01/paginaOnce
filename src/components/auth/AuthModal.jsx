@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import { X, Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Phone, MapPin, Truck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import ForgotPasswordModal from "./ForgotPasswordModal";
 
-const API_URL    = import.meta.env.VITE_API_URL ?? "https://gestionmayorista.online";
+const API_URL    = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function AuthModal({ onClose }) {
@@ -21,6 +22,7 @@ export default function AuthModal({ onClose }) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError]       = useState(null);
   const [loading, setLoading]   = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
     if (mode === "register") {
@@ -128,6 +130,26 @@ export default function AuthModal({ onClose }) {
             </div>
           </div>
 
+          {mode === "login" && (
+            <div style={{ textAlign: "right", marginBottom: "20px" }}>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#1d4ed8",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  padding: "0",
+                }}
+              >
+                ¿Olvidaste la contraseña?
+              </button>
+            </div>
+          )}
+
           {mode === "register" && (
             <>
               <div className="auth-field">
@@ -193,6 +215,13 @@ export default function AuthModal({ onClose }) {
           </button>
         </div>
       </div>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotPassword(false)}
+          onSuccess={() => setMode("login")}
+        />
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import ChatBot from "./components/layout/ChatBot";
 import ShopPage from "./pages/ShopPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import FavoritesPage from "./pages/FavoritesPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import "./App.css";
 
 export default function App() {
@@ -18,9 +19,10 @@ export default function App() {
           <Header />
           <CartDrawer />
           <Routes>
-            <Route path="/"          element={<ShopPage />} />
-            <Route path="/checkout"  element={<CheckoutPage />} />
-            <Route path="/favoritos" element={<FavoritesPage />} />
+            <Route path="/"              element={<ShopPage />} />
+            <Route path="/checkout"      element={<CheckoutPage />} />
+            <Route path="/favoritos"     element={<FavoritesPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
           </Routes>
           <ChatBot />
         </CartProvider>
