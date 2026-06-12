@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node update-version.js && vite build",
   "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "headers": [
     {
