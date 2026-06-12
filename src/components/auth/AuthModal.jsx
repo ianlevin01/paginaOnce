@@ -131,7 +131,7 @@ export default function AuthModal({ onClose }) {
           </div>
 
           {mode === "login" && (
-            <div style={{ textAlign: "right", marginBottom: "20px" }}>
+            <div style={{ textAlign: "right", marginTop: "8px", marginBottom: "24px" }}>
               <button
                 type="button"
                 onClick={() => setShowForgotPassword(true)}
@@ -139,10 +139,12 @@ export default function AuthModal({ onClose }) {
                   background: "none",
                   border: "none",
                   color: "#1d4ed8",
-                  fontSize: "13px",
+                  fontSize: "14px",
+                  fontWeight: "500",
                   cursor: "pointer",
                   textDecoration: "underline",
-                  padding: "0",
+                  padding: "4px 0",
+                  display: "inline-block",
                 }}
               >
                 ¿Olvidaste la contraseña?
