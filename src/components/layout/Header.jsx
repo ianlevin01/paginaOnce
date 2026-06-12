@@ -37,8 +37,12 @@ export default function Header() {
 
   useEffect(() => {
     if (location.state?.showAuthModal) {
-      setShowAuthModal(true);
-      window.history.replaceState({}, document.title);
+      // Defer setState to next render cycle to avoid cascading renders
+      const timer = setTimeout(() => {
+        setShowAuthModal(true);
+        window.history.replaceState({}, document.title);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [location.state]);
 
