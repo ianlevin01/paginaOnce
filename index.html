@@ -11,36 +11,7 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Auto-update checker: detecta nuevas versiones y recarga automáticamente -->
-    <script>
-      (function() {
-        let lastVersion = localStorage.getItem('app_version');
-        const checkInterval = 60000; // Cada 60 segundos
-
-        async function checkForUpdates() {
-          try {
-            const res = await fetch('/version.json?t=' + Date.now());
-            if (!res.ok) return;
-            const { version } = await res.json();
-
-            if (lastVersion && version !== lastVersion) {
-              console.log('Nueva versión disponible. Recargando...');
-              window.location.reload();
-              return;
-            }
-
-            lastVersion = version;
-            localStorage.setItem('app_version', version);
-          } catch (err) {
-            console.warn('Error checking for updates:', err);
-          }
-        }
-
-        // Verificar al cargar
-        checkForUpdates();
-        // Verificar periódicamente
-        setInterval(checkForUpdates, checkInterval);
-      })();
-    </script>
+    <!-- Auto-update disabled: was causing infinite reload loops -->
+    <!-- Update detection should be handled by service workers instead -->
   </body>
 </html>
