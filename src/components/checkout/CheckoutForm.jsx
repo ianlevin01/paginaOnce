@@ -8,6 +8,7 @@ import {
   LogIn, UserPlus
 } from "lucide-react";
 import AuthModal from "../auth/AuthModal";
+import InactiveProductsModal from "./InactiveProductsModal";
 
 const API_URL    = import.meta.env.VITE_API_URL ?? "https://gestionmayorista.online";
 const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
@@ -50,7 +51,7 @@ function CheckoutCartItem({ item }) {
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function CheckoutForm() {
-  const { cartItems, total, clearCart } = useCart();
+  const { cartItems, total, clearCart, removeFromCart } = useCart();
   const { user, isLoggedIn, token, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -58,6 +59,9 @@ export default function CheckoutForm() {
   const [loading,         setLoading]         = useState(false);
   const [error,           setError]           = useState(null);
   const [showAuthModal,   setShowAuthModal]   = useState(false);
+  const [inactiveProducts, setInactiveProducts] = useState([]);
+  const [showInactiveModal, setShowInactiveModal] = useState(false);
+  const [checkingProducts, setCheckingProducts] = useState(false);
   // guestChosen: false = mostrando pantalla de elección, true = mostrando formulario
   const [guestChosen,     setGuestChosen]     = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -88,6 +92,69 @@ export default function CheckoutForm() {
     window.scrollTo({ top: 0, behavior: "instant" });
   };
 
+  // Validar que todos los productos sean activos
+  const validateProductsActive = async () => {
+    if (cartItems.length === 0) return true;
+
+    setCheckingProducts(true);
+    try {
+      // Obtener info actualizada de los productos
+      const productIds = cartItems.map(item => item.id).join(',');
+      const res = await fetch(
+        `${API_URL}/api/products?ids=${encodeURIComponent(productIds)}&negocio_id=${NEGOCIO_ID}`
+      );
+
+      if (!res.ok) {
+        // Si falla la validación, permitir enviar (mejor UX)
+        setCheckingProducts(false);
+        return true;
+      }
+
+      const products = await res.json();
+      const productMap = new Map(products.map(p => [p.id, p]));
+
+      // Encontrar productos inactivos
+      const inactive = [];
+      for (const item of cartItems) {
+        const product = productMap.get(item.id);
+        if (product && product.active === false) {
+          inactive.push({ id: item.id, name: item.name, quantity: item.quantity });
+        }
+      }
+
+      if (inactive.length > 0) {
+        setInactiveProducts(inactive);
+        setShowInactiveModal(true);
+        setCheckingProducts(false);
+        return false;
+      }
+
+      setCheckingProducts(false);
+      return true;
+    } catch (err) {
+      console.error('Error validating products:', err);
+      // Si falla la conexión, permitir enviar
+      setCheckingProducts(false);
+      return true;
+    }
+  };
+
+  // Eliminar productos inactivos del carrito
+  const handleRemoveInactiveProducts = () => {
+    setCheckingProducts(true);
+    try {
+      for (const product of inactiveProducts) {
+        removeFromCart(product.id);
+      }
+      setShowInactiveModal(false);
+      setInactiveProducts([]);
+      setCheckingProducts(false);
+    } catch (err) {
+      console.error('Error removing products:', err);
+      setCheckingProducts(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!isLoggedIn && !guestChosen) {
       handleContinueAsGuest();
@@ -95,6 +162,12 @@ export default function CheckoutForm() {
     }
     if (!guestValid) {
       setSubmitAttempted(true);
+      return;
+    }
+
+    // Validar productos activos ANTES de enviar
+    const allActive = await validateProductsActive();
+    if (!allActive) {
       return;
     }
 
@@ -360,6 +433,15 @@ export default function CheckoutForm() {
       </div>
 
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+
+      {showInactiveModal && (
+        <InactiveProductsModal
+          inactiveProducts={inactiveProducts}
+          onRemove={handleRemoveInactiveProducts}
+          onKeep={() => setShowInactiveModal(false)}
+          loading={checkingProducts}
+        />
+      )}
 
       {/* Barra sticky mobile */}
       <div className="checkout-mobile-bar">
