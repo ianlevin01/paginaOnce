@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AuthModal from "../auth/AuthModal";
 import InactiveProductsModal from "./InactiveProductsModal";
+import CartRecommendations from "./CartRecommendations";
 
 const API_URL    = import.meta.env.VITE_API_URL ?? "https://gestionmayorista.online";
 const NEGOCIO_ID = "00000000-0000-0000-0000-000000000001";
@@ -431,6 +432,8 @@ export default function CheckoutForm() {
           <p className="submit-hint">Te contactaremos para confirmar</p>
         </div>
       </div>
+
+      <CartRecommendations cartItems={cartItems} />
 
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
 

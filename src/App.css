@@ -1484,6 +1484,78 @@ html { scrollbar-color: rgba(0,0,0,0.32) rgba(0,0,0,0.06); scrollbar-width: thin
 .input-error { border-color: #f87171 !important; background: #fff5f5 !important; }
 .field-error { font-size: 12px; color: #dc2626; margin-top: -2px; }
 
+/* ─── CART RECOMMENDATIONS (bottom sheet) ───────────────────────────────── */
+@keyframes recoSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.reco-sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 130;
+  background: var(--bg-card, #fff);
+  border-top: 2px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.14);
+  padding: 18px 28px 28px;
+  animation: recoSlideUp .45s cubic-bezier(.16,1,.3,1) both;
+}
+.reco-sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.reco-sheet-title {
+  font-family: var(--ff-display);
+  font-size: 16px; font-weight: 800; color: var(--ink);
+}
+.reco-sheet-close {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 50%; cursor: pointer;
+  color: var(--ink-muted); font-size: 15px; line-height: 1;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.reco-sheet-close:hover { background: var(--border); color: var(--ink); }
+.reco-scroll {
+  display: flex; gap: 14px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; padding-bottom: 2px;
+}
+.reco-scroll::-webkit-scrollbar { display: none; }
+.reco-card {
+  flex-shrink: 0; width: 148px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: border-color .2s, box-shadow .2s;
+}
+.reco-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+.reco-card-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--bg); }
+.reco-card-body { padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.reco-card-name {
+  font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.reco-card-price { font-size: 13px; font-weight: 700; color: var(--accent); }
+.reco-card-btn {
+  margin-top: auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 8px;
+  background: var(--gradient); color: #fff;
+  border: none; border-radius: var(--radius-xs);
+  font-family: var(--ff-body); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s; white-space: nowrap;
+}
+.reco-card-btn:hover { opacity: .88; }
+.reco-card-btn.added { background: var(--success); }
+@media (max-width: 900px) {
+  .reco-sheet { bottom: 70px; padding: 16px 16px 20px; border-radius: 16px 16px 0 0; }
+}
+
 /* ─── FAVORITES ──────────────────────────────────────────────────────────── */
 .favorites-main {
   min-height: calc(100vh - var(--header-h));
