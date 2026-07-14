@@ -226,7 +226,8 @@ export default function ShopPage() {
 
 function normalizeProduct(p) {
   const prices  = p.prices ?? [];
-  const price1  = prices.find((x) => x.price_type === "precio_1");
+  const tier    = import.meta.env.VITE_PRICE_TIER || "1";
+  const price1  = prices.find((x) => x.price_type === `precio_${tier}`);
   const price   = parseFloat(price1?.price ?? prices[0]?.price ?? 0);
   const stockArr = p.stock ?? [];
   const stock   = stockArr.length === 0
